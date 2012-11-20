@@ -1,0 +1,54 @@
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/RelativeLayout1"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".MainActivity" >
+
+    <ImageView
+        android:id="@+id/balata_bg_image"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:contentDescription="@string/nokia_3310_image"
+        android:scaleType="center"
+        android:src="@drawable/balata" />
+
+    <TextView
+        android:id="@+id/tv_listeners"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginBottom="135dip"
+        android:layout_marginLeft="1dp"
+        android:gravity="center"
+        android:maxWidth="200dp"
+        android:text="@string/balata_listeners"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textSize="13sp"
+        android:width="200dp" />
+
+    <TextView
+        android:id="@+id/tv_song_info"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginBottom="90dip"
+        android:layout_marginLeft="1dp"
+        android:gravity="center"
+        android:maxWidth="200dp"
+        android:text="@string/song_info"
+        android:textAppearance="?android:attr/textAppearanceMedium"
+        android:textSize="12sp"
+        android:width="200dp" />
+
+    <Button
+        android:id="@+id/btn_play_stop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:layout_marginRight="75dp"
+        android:layout_marginTop="65dp"
+        android:minHeight="56dip"
+        android:background="@android:color/transparent" />
+
+</FrameLayout>
