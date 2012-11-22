@@ -9,5 +9,7 @@
     <string name="text_song">Song</string>
     <string name="song_info">Song Info</string>
     <string name="balata_listeners">Balata.FM [0]</string>
+    <string name="retrieving_song_data">Retrieving song data...</string>
+    <string name="balatafm">Balata.fm</string>
 
 </resources>

@@ -18,6 +18,8 @@ public class MainActivity extends Activity {
 	TextView tv_song_info;
 	SongInfoService songInfoService;
 	
+	private static Boolean serviceStarted = false;
+	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
@@ -44,7 +46,10 @@ public class MainActivity extends Activity {
 
 		// Start the updates service
 		Log.d(TAG, "About to start the service...");
-		startService(new Intent(this, SongInfoService.class));
+		if (MainActivity.serviceStarted == false) {
+			startService(new Intent(this, SongInfoService.class));
+			MainActivity.serviceStarted = true;
+		}
 	}
 
 	@Override

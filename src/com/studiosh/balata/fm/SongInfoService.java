@@ -17,14 +17,16 @@ import org.json.JSONObject;
 
 import android.annotation.TargetApi;
 import android.app.Notification;
+import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
+import android.content.Context;
 import android.content.Intent;
 import android.os.Build;
 import android.os.IBinder;
+import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 
-@TargetApi(Build.VERSION_CODES.JELLY_BEAN)
 public class SongInfoService extends Service {
 	private static final String TAG = "SongInfoService";
 
@@ -39,6 +41,8 @@ public class SongInfoService extends Service {
 	private String song_artist;
 	private int listeners;
 
+	private NotificationCompat.Builder notify_build;
+	
 	@Override
 	public IBinder onBind(Intent intent) {
 		return null;
@@ -80,14 +84,24 @@ public class SongInfoService extends Service {
 		PendingIntent pi = PendingIntent.getActivity(getApplicationContext(), 0,
 		                new Intent(getApplicationContext(), MainActivity.class),
 		                PendingIntent.FLAG_UPDATE_CURRENT);
-		Notification notification = new Notification.Builder(this)
-			.setContentTitle("Balata.fm")
-			.setContentText("Test notification")
+		notify_build = new NotificationCompat.Builder(this)
+			.setContentTitle(getString(R.string.balatafm))
+			.setContentText(getString(R.string.retrieving_song_data))
 			.setSmallIcon(R.drawable.ic_launcher)
 			.setOngoing(true)
-			.setContentIntent(pi)
-			.build();
-		startForeground(NOTIFY_ID, notification);
+			.setContentIntent(pi);
+		
+		startForeground(NOTIFY_ID, notify_build.build());
+	}
+	
+	public void updateNotification() {
+		notify_build.setContentText(song_artist + " - " + song_title);
+		
+		NotificationManager notify_manager =
+		        (NotificationManager) getSystemService(
+		        		Context.NOTIFICATION_SERVICE);
+		
+		notify_manager.notify(NOTIFY_ID, notify_build.build());
 	}
 
 	private class Updater extends Thread {
@@ -121,6 +135,7 @@ public class SongInfoService extends Service {
 					Log.i(TAG, "Title " + 
 							songInfoService.song_title);
 					
+					songInfoService.updateNotification();
 					Thread.sleep(DELAY_FG);
 				} catch (JSONException e) {
 					e.printStackTrace();
