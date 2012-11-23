@@ -40,6 +40,7 @@ public class MainActivity extends Activity implements MediaPlayer.OnPreparedList
 	
 	private Boolean mRunFlag;
 	private Boolean mBuffering = false;
+	private Boolean mPlaying = true;
 	private Updater mUpdater;
 	private static MediaPlayer mMediaPlayer;
 	
@@ -64,7 +65,12 @@ public class MainActivity extends Activity implements MediaPlayer.OnPreparedList
 		btn_play_stop.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				
+				if (mMediaPlayer.isPlaying()) {
+					mMediaPlayer.stop();
+					mPlaying = false;
+				} else {
+					startPlaying();
+				}
 			}
 		});
 				
@@ -76,7 +82,7 @@ public class MainActivity extends Activity implements MediaPlayer.OnPreparedList
 			mMediaPlayer.setDataSource(url);
 		} catch (IOException e) {
 			
-		}
+		}		
 	}
 
 	@Override
@@ -99,16 +105,16 @@ public class MainActivity extends Activity implements MediaPlayer.OnPreparedList
 			mUpdater.start();
 		}
 		
-		mMediaPlayer.setOnPreparedListener(this);
-		tv_song_info.setText(R.string.buffering);
-		mBuffering = true;
-		mMediaPlayer.prepareAsync();
+		if (mPlaying) {
+			startPlaying();
+		}
 	}
 	
 	@Override
 	public void onPrepared(MediaPlayer mp) {
 		mp.start();
 		mBuffering = false;
+		mPlaying = true;
 		updateSongDisplay();
 	}
 
@@ -118,7 +124,9 @@ public class MainActivity extends Activity implements MediaPlayer.OnPreparedList
 		
 		mRunFlag = false;
 		mUpdater = null;
-		mMediaPlayer.stop();
+		if (mMediaPlayer.isPlaying()) {
+			mMediaPlayer.stop();
+		}
 	};
 	
 	public void updateSongDetails(String song_artist, String song_title, int listeners) {
@@ -134,6 +142,13 @@ public class MainActivity extends Activity implements MediaPlayer.OnPreparedList
 	public void updateSongDisplay() {
 		tv_song_info.setText(mSongArtist + "\n" + mSongTitle);
 		tv_listeners.setText("Balata.FM [" + Integer.toString(mListeners) + "]");
+	}
+	
+	public void startPlaying() {
+		mMediaPlayer.setOnPreparedListener(this);
+		tv_song_info.setText(R.string.buffering);
+		mBuffering = true;
+		mMediaPlayer.prepareAsync();
 	}
 	
 	
