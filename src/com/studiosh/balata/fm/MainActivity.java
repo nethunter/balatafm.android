@@ -2,11 +2,14 @@ package com.studiosh.balata.fm;
 
 import android.app.Activity;
 import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.graphics.Typeface;
 import android.os.Bundle;
+import android.os.IBinder;
 import android.util.Log;
 import android.view.Menu;
 import android.view.View;
@@ -19,10 +22,11 @@ public class MainActivity extends Activity {
 
 	TextView tv_listeners;
 	TextView tv_song_info;
-	SongInfoService songInfoService;
-
-	private static Boolean serviceStarted = false;
-	private Intent service_intent;
+	
+	private static SongInfoService mSongInfoService;
+	private static Boolean mServiceStarted = false;
+	
+	private Intent mServiceIntent;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -51,16 +55,21 @@ public class MainActivity extends Activity {
 
 		// Start the updates service
 		Log.d(TAG, "About to start the service...");
-		service_intent = new Intent(this, SongInfoService.class);
-		startService(service_intent);
-		MainActivity.serviceStarted = true;
+		if (mServiceStarted == false) {
+			mServiceIntent = new Intent(this, SongInfoService.class);
+			startService(mServiceIntent);
+			mServiceStarted = true;
+		}
 	}
 
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
 		Log.d(TAG, "Activity destroyed");
-		stopService(service_intent);
+		
+		if (mServiceStarted) {
+			stopService(mServiceIntent);
+		}
 	}
 
 	@Override
@@ -91,12 +100,14 @@ public class MainActivity extends Activity {
 			updateUI(intent);
 		}
 	};
-
+	
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
+		return false;
+		
 		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.activity_main, menu);
-		return true;
+		// getMenuInflater().inflate(R.menu.activity_main, menu);
+		// return true;
 	}
 
 }
