@@ -11,5 +11,6 @@
     <string name="balata_listeners">Balata.FM [0]</string>
     <string name="retrieving_song_data">Retrieving song data...</string>
     <string name="balatafm">Balata.fm</string>
+    <string name="retrieveing_song_details">Retrieveing song details...</string>
 
 </resources>

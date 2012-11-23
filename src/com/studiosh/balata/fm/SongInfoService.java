@@ -15,14 +15,13 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.annotation.TargetApi;
-import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
-import android.os.Build;
+import android.media.MediaPlayer;
+import android.os.Handler;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
@@ -35,14 +34,20 @@ public class SongInfoService extends Service {
 	static final int NOTIFY_ID = 1345;
 
 	private boolean runFlag = false;
-	private Updater updater;
+	private static Updater updater;
 		
 	private String song_title;
 	private String song_artist;
 	private int listeners;
+	
+	private BalataStreamer balata_streamer;
 
 	private NotificationCompat.Builder notify_build;
 	
+    public static final String BROADCAST_ACTION = "com.studiosh.balata.fm.SONG_DETAILS_UPDATE";
+    Intent intent;
+    private final Handler handler = new Handler();
+    
 	@Override
 	public IBinder onBind(Intent intent) {
 		return null;
@@ -51,7 +56,12 @@ public class SongInfoService extends Service {
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		this.updater = new Updater();
+		intent = new Intent(BROADCAST_ACTION);
+		
+		if (updater == null) {
+			updater = new Updater();
+		}
+		
 		Log.d(TAG, "Service created");
 	}
 
@@ -59,10 +69,15 @@ public class SongInfoService extends Service {
 	public int onStartCommand(Intent intent, int flags, int startId) {
 		Log.d(TAG, "Service started");
 
-		this.runFlag = true;
-		this.updater.start();
+		runFlag = true;
+		if (!updater.isAlive()) {
+			updater.start();
+		}
+		
+		handler.removeCallbacks(sendUpdatesToUI);
 		
 		startNotification();
+		startStream();
 
 		return START_STICKY;
 	}
@@ -71,29 +86,36 @@ public class SongInfoService extends Service {
 	public void onDestroy() {
 		super.onDestroy();
 
-		this.runFlag = false;
-		this.updater.interrupt();
-		this.updater = null;
+		runFlag = false;
+		updater.interrupt();
 
 		Log.d(TAG, "Service destroyed");
 	}
 	
 	public void startNotification() {
-		// String songName;
-		// assign the song name to songName
-		PendingIntent pi = PendingIntent.getActivity(getApplicationContext(), 0,
-		                new Intent(getApplicationContext(), MainActivity.class),
-		                PendingIntent.FLAG_UPDATE_CURRENT);
-		notify_build = new NotificationCompat.Builder(this)
-			.setContentTitle(getString(R.string.balatafm))
-			.setContentText(getString(R.string.retrieving_song_data))
-			.setSmallIcon(R.drawable.ic_launcher)
-			.setOngoing(true)
-			.setContentIntent(pi);
-		
-		startForeground(NOTIFY_ID, notify_build.build());
+		if (notify_build == null) {
+			PendingIntent pi = PendingIntent.getActivity(getApplicationContext(), 0,
+			                new Intent(getApplicationContext(), MainActivity.class),
+			                PendingIntent.FLAG_UPDATE_CURRENT);
+			
+			notify_build = new NotificationCompat.Builder(this)
+				.setContentTitle(getString(R.string.balatafm))
+				.setContentText(getString(R.string.retrieving_song_data))
+				.setSmallIcon(R.drawable.ic_launcher)
+				.setOngoing(true)
+				.setContentIntent(pi);
+			
+			startForeground(NOTIFY_ID, notify_build.build());
+		}
 	}
 	
+	private void startStream() {
+		balata_streamer.play();
+	}
+	
+	/**
+	 * Update the system tray notification to show the song info
+	 */
 	public void updateNotification() {
 		notify_build.setContentText(song_artist + " - " + song_title);
 		
@@ -103,6 +125,33 @@ public class SongInfoService extends Service {
 		
 		notify_manager.notify(NOTIFY_ID, notify_build.build());
 	}
+	
+	/**
+	 * Update the song details in the 
+	 */
+	public void updateSongDetails(String song_artist, String song_title, int listeners) {
+		this.song_artist = song_artist;
+		this.song_title = song_title;
+		this.listeners = listeners;
+		
+		updateNotification();
+		handler.postDelayed(sendUpdatesToUI, 1000);
+	}
+
+	private void broadcastSongDetails() {
+		intent.putExtra("song_artist", song_artist);
+		intent.putExtra("song_title", song_title);
+		intent.putExtra("listeners", listeners);
+		
+		sendBroadcast(intent);		
+	}
+	
+    private Runnable sendUpdatesToUI = new Runnable() {
+    	public void run() {
+    		broadcastSongDetails();
+    		Log.d(TAG, "Updating UI with song details");
+    	}
+    };
 
 	private class Updater extends Thread {
 		public Updater() {
@@ -122,20 +171,15 @@ public class SongInfoService extends Service {
 					Log.i(TAG, "Number of entries "
 							+ songDetails.length());
 					
-					songInfoService.listeners = songDetails.getInt("listeners");
-					songInfoService.song_title = songDetails.getString("title");
-					songInfoService.song_artist = songDetails.getString("artist");
+					int listeners = songDetails.getInt("listeners");
+					String song_title = songDetails.getString("title");
+					String song_artist = songDetails.getString("artist");
 					
-					Log.i(TAG, "Listeners " + 
-							Integer.toString(songInfoService.listeners));
+					Log.i(TAG, "Listeners " + Integer.toString(listeners));
+					Log.i(TAG, "Artist " + song_artist);
+					Log.i(TAG, "Title " + song_title);
 					
-					Log.i(TAG, "Artist " + 
-							songInfoService.song_artist);
-
-					Log.i(TAG, "Title " + 
-							songInfoService.song_title);
-					
-					songInfoService.updateNotification();
+					songInfoService.updateSongDetails(song_artist, song_title, listeners);
 					Thread.sleep(DELAY_FG);
 				} catch (JSONException e) {
 					e.printStackTrace();

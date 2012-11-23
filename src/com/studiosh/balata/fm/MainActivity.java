@@ -1,7 +1,10 @@
 package com.studiosh.balata.fm;
 
 import android.app.Activity;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Typeface;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,28 +16,30 @@ import android.widget.TextView;
 
 public class MainActivity extends Activity {
 	private static final String TAG = "MainActivity";
-	
+
 	TextView tv_listeners;
 	TextView tv_song_info;
 	SongInfoService songInfoService;
-	
+
 	private static Boolean serviceStarted = false;
-	
+	private Intent service_intent;
+
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		
+
 		// Prepare the text views that will hold the artist details
 		tv_listeners = (TextView) findViewById(R.id.tv_listeners);
 		tv_song_info = (TextView) findViewById(R.id.tv_song_info);
-		
+
 		// Set the custom font for the text areas
-		Typeface fontPressStart = Typeface.createFromAsset(getAssets(), "fonts/PressStart2P.ttf");
+		Typeface fontPressStart = Typeface.createFromAsset(getAssets(),
+				"fonts/PressStart2P.ttf");
 		tv_listeners.setTypeface(fontPressStart);
 		tv_song_info.setTypeface(fontPressStart);
-		tv_song_info.setText("Artist\nSong");
-		
+		tv_song_info.setText(R.string.retrieveing_song_details);
+
 		// Handle the Start/Stop Button
 		Button btn_play_stop = (Button) findViewById(R.id.btn_play_stop);
 		btn_play_stop.setOnClickListener(new OnClickListener() {
@@ -46,19 +51,47 @@ public class MainActivity extends Activity {
 
 		// Start the updates service
 		Log.d(TAG, "About to start the service...");
-		if (MainActivity.serviceStarted == false) {
-			startService(new Intent(this, SongInfoService.class));
-			MainActivity.serviceStarted = true;
-		}
+		service_intent = new Intent(this, SongInfoService.class);
+		startService(service_intent);
+		MainActivity.serviceStarted = true;
 	}
 
 	@Override
-	protected void onDestroy() {		
+	protected void onDestroy() {
+		super.onDestroy();
 		Log.d(TAG, "Activity destroyed");
-		System.exit(0);
-		stopService(new Intent(this, SongInfoService.class));
+		stopService(service_intent);
 	}
-	
+
+	@Override
+	protected void onResume() {
+		super.onResume();
+		registerReceiver(broadcastReceiver, new IntentFilter(
+				SongInfoService.BROADCAST_ACTION));
+	}
+
+	@Override
+	protected void onPause() {
+		super.onPause();
+		unregisterReceiver(broadcastReceiver);
+	};
+
+	private void updateUI(Intent intent) {
+		String song_artist = intent.getStringExtra("song_artist");
+		String song_title = intent.getStringExtra("song_title");
+		int listeners = intent.getIntExtra("listeners", 0);
+
+		tv_song_info.setText(song_artist + "\n" + song_title);
+		tv_listeners.setText("Balata.FM [" + Integer.toString(listeners) + "]");
+	}
+
+	private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+		@Override
+		public void onReceive(Context context, Intent intent) {
+			updateUI(intent);
+		}
+	};
+
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
