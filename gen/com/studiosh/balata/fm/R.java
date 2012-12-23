@@ -8,6 +8,9 @@
 package com.studiosh.balata.fm;
 
 public final class R {
+    public static final class array {
+        public static final int pref_streaming_format_titles=0x7f060000;
+    }
     public static final class attr {
     }
     public static final class drawable {
@@ -15,31 +18,41 @@ public final class R {
         public static final int ic_launcher=0x7f020001;
     }
     public static final class id {
-        public static final int RelativeLayout1=0x7f070000;
-        public static final int balata_bg_image=0x7f070001;
-        public static final int btn_play_stop=0x7f070004;
-        public static final int menu_settings=0x7f070005;
-        public static final int tv_listeners=0x7f070002;
-        public static final int tv_song_info=0x7f070003;
+        public static final int RelativeLayout1=0x7f090000;
+        public static final int balata_bg_image=0x7f090001;
+        public static final int btn_play_stop=0x7f090004;
+        public static final int menu_settings=0x7f090005;
+        public static final int tv_listeners=0x7f090002;
+        public static final int tv_song_info=0x7f090003;
     }
     public static final class layout {
         public static final int activity_main=0x7f030000;
     }
     public static final class menu {
-        public static final int activity_main=0x7f060000;
+        public static final int activity_main=0x7f080000;
     }
     public static final class string {
-        public static final int app_name=0x7f040000;
-        public static final int balata_listeners=0x7f040007;
-        public static final int balatafm=0x7f040009;
-        public static final int hello_world=0x7f040001;
-        public static final int menu_settings=0x7f040002;
-        public static final int nokia_3310_image=0x7f040003;
-        public static final int retrieveing_song_details=0x7f04000a;
-        public static final int retrieving_song_data=0x7f040008;
-        public static final int song_info=0x7f040006;
-        public static final int text_artist=0x7f040004;
-        public static final int text_song=0x7f040005;
+        public static final int app_name=0x7f050000;
+        public static final int balata_listeners=0x7f050007;
+        public static final int balatafm=0x7f050009;
+        public static final int hello_world=0x7f050001;
+        public static final int menu_settings=0x7f050002;
+        public static final int nokia_3310_image=0x7f050003;
+        public static final int pref_description_social_recommendations=0x7f05000e;
+        public static final int pref_description_streaming_format=0x7f050011;
+        /**  Strings related to Settings 
+ Example General settings 
+         */
+        public static final int pref_header_general=0x7f05000c;
+        public static final int pref_header_streaming=0x7f05000f;
+        public static final int pref_title_social_recommendations=0x7f05000d;
+        public static final int pref_title_streaming_format=0x7f050010;
+        public static final int retrieveing_song_details=0x7f05000a;
+        public static final int retrieving_song_data=0x7f050008;
+        public static final int song_info=0x7f050006;
+        public static final int text_artist=0x7f050004;
+        public static final int text_song=0x7f050005;
+        public static final int title_activity_settings=0x7f05000b;
     }
     public static final class style {
         /** 
@@ -63,10 +76,15 @@ public final class R {
     
  API 14 theme customizations can go here. 
          */
-        public static final int AppBaseTheme=0x7f050000;
+        public static final int AppBaseTheme=0x7f070000;
         /**  Application theme. 
  All customizations that are NOT specific to a particular API-level can go here. 
          */
-        public static final int AppTheme=0x7f050001;
+        public static final int AppTheme=0x7f070001;
+    }
+    public static final class xml {
+        public static final int pref_general=0x7f040000;
+        public static final int pref_headers=0x7f040001;
+        public static final int pref_streaming=0x7f040002;
     }
 }

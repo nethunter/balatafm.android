@@ -12,20 +12,26 @@ import android.os.Bundle;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.TextView;
 
+import com.studiosh.balata.fm.SongInfoService.LocalBinder;
+
 public class MainActivity extends Activity {
 	private static final String TAG = "MainActivity";
 
-	TextView tv_listeners;
-	TextView tv_song_info;
+	TextView mtvListeners;
+	TextView mtvSongInfo;
+
+	private SongInfoService mSongInfoService;
+	private Boolean mServiceStarted = false;
+	private Boolean mBound = false;
 	
-	private static SongInfoService mSongInfoService;
-	private static Boolean mServiceStarted = false;
-	
+	private static Boolean mPlaying = true;
+
 	private Intent mServiceIntent;
 
 	@Override
@@ -34,15 +40,15 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 
 		// Prepare the text views that will hold the artist details
-		tv_listeners = (TextView) findViewById(R.id.tv_listeners);
-		tv_song_info = (TextView) findViewById(R.id.tv_song_info);
+		mtvListeners = (TextView) findViewById(R.id.tv_listeners);
+		mtvSongInfo = (TextView) findViewById(R.id.tv_song_info);
 
 		// Set the custom font for the text areas
 		Typeface fontPressStart = Typeface.createFromAsset(getAssets(),
 				"fonts/PressStart2P.ttf");
-		tv_listeners.setTypeface(fontPressStart);
-		tv_song_info.setTypeface(fontPressStart);
-		tv_song_info.setText(R.string.retrieveing_song_details);
+		mtvListeners.setTypeface(fontPressStart);
+		mtvSongInfo.setTypeface(fontPressStart);
+		mtvSongInfo.setText(R.string.retrieveing_song_details);
 
 		// Handle the Start/Stop Button
 		Button btn_play_stop = (Button) findViewById(R.id.btn_play_stop);
@@ -63,10 +69,28 @@ public class MainActivity extends Activity {
 	}
 
 	@Override
+	protected void onStart() {
+		super.onStart();
+        Intent intent = new Intent(this, SongInfoService.class);
+        startService(intent);
+        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);		
+	}
+
+	@Override
+	protected void onStop() {
+		super.onStop();
+        // Unbind from the service
+        if (mBound) {
+            unbindService(mConnection);
+            mBound = false;
+        }
+	}
+	
+	@Override
 	protected void onDestroy() {
 		super.onDestroy();
 		Log.d(TAG, "Activity destroyed");
-		
+
 		if (mServiceStarted) {
 			stopService(mServiceIntent);
 		}
@@ -85,13 +109,17 @@ public class MainActivity extends Activity {
 		unregisterReceiver(broadcastReceiver);
 	};
 
+	protected void updatePlayStatus()
+	{
+	}
+	
 	private void updateUI(Intent intent) {
 		String song_artist = intent.getStringExtra("song_artist");
 		String song_title = intent.getStringExtra("song_title");
 		int listeners = intent.getIntExtra("listeners", 0);
 
-		tv_song_info.setText(song_artist + "\n" + song_title);
-		tv_listeners.setText("Balata.FM [" + Integer.toString(listeners) + "]");
+		mtvSongInfo.setText(song_artist + "\n" + song_title);
+		mtvListeners.setText("Balata.FM [" + Integer.toString(listeners) + "]");
 	}
 
 	private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
@@ -100,14 +128,42 @@ public class MainActivity extends Activity {
 			updateUI(intent);
 		}
 	};
-	
+
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) {
-		return false;
-		
 		// Inflate the menu; this adds items to the action bar if it is present.
-		// getMenuInflater().inflate(R.menu.activity_main, menu);
-		// return true;
+		getMenuInflater().inflate(R.menu.activity_main, menu);
+		return true;
 	}
 
+	@Override
+	public boolean onMenuItemSelected(int featureId, MenuItem item) {
+		switch (item.getItemId()) {
+		case R.id.menu_settings:
+			Intent intent = (Intent) new Intent(this, SettingsActivity.class);
+			startActivity(intent);
+			break;
+		}
+		return super.onMenuItemSelected(featureId, item);
+	}
+	
+    /** Defines callbacks for service binding, passed to bindService() */
+    private ServiceConnection mConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName className,
+                IBinder service) {
+            // We've bound to LocalService, cast the IBinder and get LocalService instance
+            LocalBinder binder = (LocalBinder) service;
+            mSongInfoService = binder.getService();
+            mBound = true;
+            
+            mSongInfoService.broadcastSongDetails();
+            mSongInfoService.startStream();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName arg0) {
+            mBound = false;
+        }
+    };	
 }
