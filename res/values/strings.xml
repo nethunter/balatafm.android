@@ -4,7 +4,7 @@
     <string name="app_name">Balata.FM</string>
     <string name="hello_world">Hello world!</string>
     <string name="menu_settings">Settings</string>
-    <string name="nokia_3310_image">Nokia 3310 Image</string>
+    <string name="purple_gradient">Purple Gradient</string>
     <string name="text_artist">Artist</string>
     <string name="text_song">Song</string>
     <string name="song_info">Song Info</string>
@@ -12,5 +12,7 @@
     <string name="retrieving_song_data">Retrieving song data...</string>
     <string name="balatafm">Balata.fm</string>
     <string name="retrieveing_song_details">Retrieveing song details...</string>
+    <string name="balata_fm_logo">Balata.FM Logo</string>
+    <string name="play_pause_button">Play/Pause Button</string>
 
 </resources>

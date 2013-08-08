@@ -16,6 +16,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
+import android.widget.ImageButton;
 import android.widget.TextView;
 
 import com.studiosh.balata.fm.SongInfoService.LocalBinder;
@@ -23,7 +24,6 @@ import com.studiosh.balata.fm.SongInfoService.LocalBinder;
 public class MainActivity extends Activity {
 	private static final String TAG = "MainActivity";
 
-	TextView mtvListeners;
 	TextView mtvSongInfo;
 
 	private SongInfoService mSongInfoService;
@@ -40,18 +40,16 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 
 		// Prepare the text views that will hold the artist details
-		mtvListeners = (TextView) findViewById(R.id.tv_listeners);
 		mtvSongInfo = (TextView) findViewById(R.id.tv_song_info);
 
 		// Set the custom font for the text areas
 		Typeface fontPressStart = Typeface.createFromAsset(getAssets(),
 				"fonts/PressStart2P.ttf");
-		mtvListeners.setTypeface(fontPressStart);
 		mtvSongInfo.setTypeface(fontPressStart);
 		mtvSongInfo.setText(R.string.retrieveing_song_details);
 
 		// Handle the Start/Stop Button
-		Button btn_play_stop = (Button) findViewById(R.id.btn_play_stop);
+		ImageButton btn_play_stop = (ImageButton) findViewById(R.id.btn_play_stop);
 		btn_play_stop.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
@@ -119,7 +117,6 @@ public class MainActivity extends Activity {
 		int listeners = intent.getIntExtra("listeners", 0);
 
 		mtvSongInfo.setText(song_artist + "\n" + song_title);
-		mtvListeners.setText("Balata.FM [" + Integer.toString(listeners) + "]");
 	}
 
 	private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
