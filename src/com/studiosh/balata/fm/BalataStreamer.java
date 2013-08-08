@@ -1,7 +1,5 @@
 package com.studiosh.balata.fm;
 
-import java.io.IOException;
-
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 

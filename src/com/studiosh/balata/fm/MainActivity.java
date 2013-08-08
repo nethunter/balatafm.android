@@ -7,29 +7,36 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.graphics.Typeface;
+import android.database.ContentObserver;
+import android.media.AudioManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
-import android.widget.Button;
-import android.widget.ImageButton;
+import android.widget.CompoundButton;
+import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.widget.SeekBar;
+import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
+import android.widget.ToggleButton;
 
 import com.studiosh.balata.fm.SongInfoService.LocalBinder;
 
 public class MainActivity extends Activity {
 	private static final String TAG = "MainActivity";
 
-	TextView mtvSongInfo;
+	TextView mTextViewSongInfo;
+	SeekBar mSeekBarVolume;
 
 	private SongInfoService mSongInfoService;
 	private Boolean mServiceStarted = false;
 	private Boolean mBound = false;
 	
+	private ToggleButton mButtonPlayStop;
 	private static Boolean mPlaying = true;
 
 	private Intent mServiceIntent;
@@ -40,23 +47,69 @@ public class MainActivity extends Activity {
 		setContentView(R.layout.activity_main);
 
 		// Prepare the text views that will hold the artist details
-		mtvSongInfo = (TextView) findViewById(R.id.tv_song_info);
+		mTextViewSongInfo = (TextView) findViewById(R.id.tv_song_info);
 
 		// Set the custom font for the text areas
-		Typeface fontPressStart = Typeface.createFromAsset(getAssets(),
-				"fonts/PressStart2P.ttf");
-		mtvSongInfo.setTypeface(fontPressStart);
-		mtvSongInfo.setText(R.string.retrieveing_song_details);
+		mTextViewSongInfo.setText(R.string.retrieveing_song_details);
 
 		// Handle the Start/Stop Button
-		ImageButton btn_play_stop = (ImageButton) findViewById(R.id.btn_play_stop);
-		btn_play_stop.setOnClickListener(new OnClickListener() {
+		mButtonPlayStop = (ToggleButton) findViewById(R.id.btn_play_stop);
+		mButtonPlayStop.setOnCheckedChangeListener(new OnCheckedChangeListener() {
+			@Override
+			public void onCheckedChanged(CompoundButton buttonView,
+					boolean isChecked) {
+				
+				if (isChecked) {
+					if (mSongInfoService.isStreamStarted()) {
+						mSongInfoService.stopStream();
+					}
+				} else {
+					if (!mSongInfoService.isStreamStarted()) {
+						mSongInfoService.startStream();
+					}
+				}
+			}
+		});
+		
+		mButtonPlayStop.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
 				Log.d(TAG, "Click on Play/Stop Button");
 			}
 		});
 
+		// Set the volume seekbar
+		mSeekBarVolume = (SeekBar) findViewById(R.id.sb_volume);	
+		final AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+		
+		// First let's handle the seek bar
+		mSeekBarVolume.setMax(audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
+		mSeekBarVolume.setProgress(audio.getStreamVolume(AudioManager.STREAM_MUSIC));
+		mSeekBarVolume.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+			public void onStopTrackingTouch(SeekBar seekBar) {}
+			public void onStartTrackingTouch(SeekBar seekBar) {}
+			
+			@Override
+			public void onProgressChanged(SeekBar seekBar, int progress,
+					boolean fromUser) {
+				if (fromUser) {
+					audio.setStreamVolume(AudioManager.STREAM_MUSIC, progress, 0);
+				}
+			}
+		});
+		
+		// Monitor system changes for volume change
+		this.getApplicationContext().getContentResolver().registerContentObserver(
+			android.provider.Settings.System.CONTENT_URI, true,
+			new ContentObserver(new Handler()) {
+				public void onChange(boolean selfChange) {
+					super.onChange(selfChange);
+					mSeekBarVolume.setProgress(audio
+							.getStreamVolume(AudioManager.STREAM_MUSIC));
+				}
+			}
+		);
+		
 		// Start the updates service
 		Log.d(TAG, "About to start the service...");
 		if (mServiceStarted == false) {
@@ -116,7 +169,7 @@ public class MainActivity extends Activity {
 		String song_title = intent.getStringExtra("song_title");
 		int listeners = intent.getIntExtra("listeners", 0);
 
-		mtvSongInfo.setText(song_artist + "\n" + song_title);
+		mTextViewSongInfo.setText(song_artist + "\n" + song_title);
 	}
 
 	private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
@@ -126,7 +179,7 @@ public class MainActivity extends Activity {
 		}
 	};
 
-	@Override
+	/* @Override
 	public boolean onCreateOptionsMenu(Menu menu) {
 		// Inflate the menu; this adds items to the action bar if it is present.
 		getMenuInflater().inflate(R.menu.activity_main, menu);
@@ -142,7 +195,7 @@ public class MainActivity extends Activity {
 			break;
 		}
 		return super.onMenuItemSelected(featureId, item);
-	}
+	} */
 	
     /** Defines callbacks for service binding, passed to bindService() */
     private ServiceConnection mConnection = new ServiceConnection() {

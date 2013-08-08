@@ -44,6 +44,21 @@ public class SongInfoService extends Service {
             // Return this instance of LocalService so clients can call public methods
             return SongInfoService.this;
         }
+        
+        public void startStream()
+        {
+        	SongInfoService.this.startStream();
+        }
+        
+        public void stopStream()
+        {
+        	SongInfoService.this.stopStream();
+        }
+        
+        public Boolean isPlaying()
+        {
+        	return SongInfoService.this.mStreamStarted;
+        }
     }
 
     @Override
@@ -140,6 +155,11 @@ public class SongInfoService extends Service {
 		if (mStreamStarted) {
 			mBalataStreamer.stop();
 		}
+	}
+	
+	public boolean isStreamStarted()
+	{
+		return mStreamStarted;
 	}
 	
 	/**
