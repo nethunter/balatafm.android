@@ -44,26 +44,16 @@ public class SongInfoService extends Service {
             // Return this instance of LocalService so clients can call public methods
             return SongInfoService.this;
         }
-        
-        public void startStream()
-        {
-        	SongInfoService.this.startStream();
-        }
-        
-        public void stopStream()
-        {
-        	SongInfoService.this.stopStream();
-        }
-        
-        public Boolean isPlaying()
-        {
-        	return SongInfoService.this.mStreamStarted;
-        }
     }
 
     @Override
     public IBinder onBind(Intent intent) {
     	mBound = true;
+    	
+    	if (mGotSongInfo) {
+    		broadcastSongDetails();
+    	}
+    	
         return mBinder;
     }
     
@@ -154,6 +144,7 @@ public class SongInfoService extends Service {
 	public void stopStream() {
 		if (mStreamStarted) {
 			mBalataStreamer.stop();
+			mStreamStarted = false;
 		}
 	}
 	
@@ -197,6 +188,7 @@ public class SongInfoService extends Service {
 			intent.putExtra("song_artist", mSongArtist);
 			intent.putExtra("song_title", mSongTitle);
 			intent.putExtra("listeners", mListeners);
+			intent.putExtra("is_playing", mStreamStarted);
 			
 			sendBroadcast(intent);
 		}

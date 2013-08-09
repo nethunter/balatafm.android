@@ -13,8 +13,6 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.CompoundButton;
@@ -32,8 +30,8 @@ public class MainActivity extends Activity {
 	TextView mTextViewSongInfo;
 	SeekBar mSeekBarVolume;
 
-	private SongInfoService mSongInfoService;
-	private Boolean mServiceStarted = false;
+	private static SongInfoService mSongInfoService;
+	private static Boolean mServiceStarted = false;
 	private Boolean mBound = false;
 	
 	private ToggleButton mButtonPlayStop;
@@ -49,9 +47,6 @@ public class MainActivity extends Activity {
 		// Prepare the text views that will hold the artist details
 		mTextViewSongInfo = (TextView) findViewById(R.id.tv_song_info);
 
-		// Set the custom font for the text areas
-		mTextViewSongInfo.setText(R.string.retrieveing_song_details);
-
 		// Handle the Start/Stop Button
 		mButtonPlayStop = (ToggleButton) findViewById(R.id.btn_play_stop);
 		mButtonPlayStop.setOnCheckedChangeListener(new OnCheckedChangeListener() {
@@ -59,7 +54,7 @@ public class MainActivity extends Activity {
 			public void onCheckedChanged(CompoundButton buttonView,
 					boolean isChecked) {
 				
-				if (isChecked) {
+				if (!isChecked) {
 					if (mSongInfoService.isStreamStarted()) {
 						mSongInfoService.stopStream();
 					}
@@ -109,22 +104,25 @@ public class MainActivity extends Activity {
 				}
 			}
 		);
-		
+	}
+
+	@Override
+	protected void onStart() {
+		super.onStart();
+			
 		// Start the updates service
 		Log.d(TAG, "About to start the service...");
 		if (mServiceStarted == false) {
 			mServiceIntent = new Intent(this, SongInfoService.class);
 			startService(mServiceIntent);
 			mServiceStarted = true;
-		}
-	}
-
-	@Override
-	protected void onStart() {
-		super.onStart();
+			
+			// Set the custom font for the text areas
+			mTextViewSongInfo.setText(R.string.retrieveing_song_details);			
+		}		
+		
         Intent intent = new Intent(this, SongInfoService.class);
-        startService(intent);
-        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);		
+        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
 	}
 
 	@Override
@@ -133,25 +131,26 @@ public class MainActivity extends Activity {
         // Unbind from the service
         if (mBound) {
             unbindService(mConnection);
-            mBound = false;
+            mBound = false;            
         }
+        
+		if (mServiceStarted && !mSongInfoService.isStreamStarted()) {
+			stopService(new Intent(this, SongInfoService.class));
+			mServiceStarted = false;
+		}        
 	}
 	
 	@Override
 	protected void onDestroy() {
 		super.onDestroy();
 		Log.d(TAG, "Activity destroyed");
-
-		if (mServiceStarted) {
-			stopService(mServiceIntent);
-		}
 	}
 
 	@Override
 	protected void onResume() {
 		super.onResume();
 		registerReceiver(broadcastReceiver, new IntentFilter(
-				SongInfoService.BROADCAST_ACTION));
+				SongInfoService.BROADCAST_ACTION));		
 	}
 
 	@Override
@@ -159,17 +158,16 @@ public class MainActivity extends Activity {
 		super.onPause();
 		unregisterReceiver(broadcastReceiver);
 	};
-
-	protected void updatePlayStatus()
-	{
-	}
 	
 	private void updateUI(Intent intent) {
 		String song_artist = intent.getStringExtra("song_artist");
 		String song_title = intent.getStringExtra("song_title");
 		int listeners = intent.getIntExtra("listeners", 0);
+		Boolean is_playing = intent.getBooleanExtra("is_playing", false);
 
 		mTextViewSongInfo.setText(song_artist + "\n" + song_title);
+		mButtonPlayStop.setChecked(is_playing);
+		Log.d(TAG, "Amount of listeners: " + Integer.toString(listeners));
 	}
 
 	private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
@@ -178,24 +176,6 @@ public class MainActivity extends Activity {
 			updateUI(intent);
 		}
 	};
-
-	/* @Override
-	public boolean onCreateOptionsMenu(Menu menu) {
-		// Inflate the menu; this adds items to the action bar if it is present.
-		getMenuInflater().inflate(R.menu.activity_main, menu);
-		return true;
-	}
-
-	@Override
-	public boolean onMenuItemSelected(int featureId, MenuItem item) {
-		switch (item.getItemId()) {
-		case R.id.menu_settings:
-			Intent intent = (Intent) new Intent(this, SettingsActivity.class);
-			startActivity(intent);
-			break;
-		}
-		return super.onMenuItemSelected(featureId, item);
-	} */
 	
     /** Defines callbacks for service binding, passed to bindService() */
     private ServiceConnection mConnection = new ServiceConnection() {
@@ -207,13 +187,17 @@ public class MainActivity extends Activity {
             mSongInfoService = binder.getService();
             mBound = true;
             
+            // Update the UI from the service
             mSongInfoService.broadcastSongDetails();
-            mSongInfoService.startStream();
         }
 
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
             mBound = false;
+            
+    		if (mServiceStarted && !mSongInfoService.isStreamStarted()) {
+    			stopService(mServiceIntent);
+    		}            
         }
     };	
 }
