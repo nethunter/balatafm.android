@@ -9,6 +9,8 @@ import android.os.Binder;
 import android.os.Handler;
 import android.os.IBinder;
 import android.support.v4.app.NotificationCompat;
+import android.telephony.PhoneStateListener;
+import android.telephony.TelephonyManager;
 import android.util.Log;
 
 public class SongInfoService extends Service {
@@ -25,7 +27,9 @@ public class SongInfoService extends Service {
 	
 	private static BalataStreamer mBalataStreamer;
 	private Boolean mStreamStarted = false;
-
+	private Boolean mPrevStreamState = false;
+	
+	private PhoneStateListener mPhoneStateListener;
 	private NotificationCompat.Builder notify_build;
 	
     public static final String BROADCAST_ACTION = "com.studiosh.balata.fm.SONG_DETAILS_UPDATE";
@@ -93,10 +97,37 @@ public class SongInfoService extends Service {
 		handler.removeCallbacks(sendUpdatesToUI);
 		
 		startNotification();
-
+		pauseOnPhoneCall();
+		
 		return START_STICKY;
 	}
 
+	public void pauseOnPhoneCall()
+	{
+		mPhoneStateListener = new PhoneStateListener() {
+		    @Override
+		    public void onCallStateChanged(int state, String incomingNumber) {
+		        if (state == TelephonyManager.CALL_STATE_RINGING || state == TelephonyManager.CALL_STATE_OFFHOOK) {
+		        	if (mStreamStarted) {
+	        			mBalataStreamer.stop();
+		        	}
+		        	
+		        	mPrevStreamState = mStreamStarted;
+		        } else if(state == TelephonyManager.CALL_STATE_IDLE) {
+		        	if (mPrevStreamState == true) {
+	        			mBalataStreamer.play();
+		        	}
+		        }
+		        super.onCallStateChanged(state, incomingNumber);
+		    }
+		};
+		TelephonyManager mgr = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+		if(mgr != null) {
+		    mgr.listen(mPhoneStateListener, PhoneStateListener.LISTEN_CALL_STATE);
+		}
+
+	}
+	
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
@@ -108,6 +139,12 @@ public class SongInfoService extends Service {
 		if (mBalataStreamer != null) {
 			mBalataStreamer.destroy();
 			mBalataStreamer = null;
+		}
+		
+		// Stop phone state listener
+		TelephonyManager mgr = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
+		if(mgr != null) {
+		    mgr.listen(mPhoneStateListener, PhoneStateListener.LISTEN_NONE);
 		}
 		
 		mUpdater.interrupt();

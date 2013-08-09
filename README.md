@@ -1,4 +1,6 @@
+Done:
+  * Pause on phone call
+
 TODO:
   * Loading spinner
-  * Pause on phone call
   * Alarm clock (?)
