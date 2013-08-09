@@ -33,7 +33,7 @@ public class SongInfoService extends Service {
     
     // Binder given to clients
     private final IBinder mBinder = new LocalBinder();
-    private Boolean mBound = false;
+    private static Boolean mBound = false;
 
     /**
      * Class used for the client Binder.  Because we know this service always
@@ -126,7 +126,7 @@ public class SongInfoService extends Service {
 			notify_build = new NotificationCompat.Builder(this)
 				.setContentTitle(getString(R.string.balatafm))
 				.setContentText(getString(R.string.retrieving_song_data))
-				.setSmallIcon(R.drawable.ic_launcher)
+				.setSmallIcon(R.drawable.ic_notification)
 				.setOngoing(true)
 				.setContentIntent(pi);
 			
@@ -171,9 +171,9 @@ public class SongInfoService extends Service {
 	 */
 	public void updateSongDetails(String song_artist, String song_title, int listeners) {
 		mGotSongInfo = true;
-		this.mSongArtist = song_artist;
-		this.mSongTitle = song_title;
-		this.mListeners = listeners;
+		mSongArtist = song_artist;
+		mSongTitle = song_title;
+		mListeners = listeners;
 		
 		updateNotification();
 		

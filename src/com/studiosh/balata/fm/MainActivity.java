@@ -7,12 +7,15 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
+import android.content.SharedPreferences;
 import android.database.ContentObserver;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
+import android.view.Menu;
+import android.view.MenuInflater;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.CompoundButton;
@@ -26,6 +29,7 @@ import com.studiosh.balata.fm.SongInfoService.LocalBinder;
 
 public class MainActivity extends Activity {
 	private static final String TAG = "MainActivity";
+    public static final String PREFS_NAME = "BalataPrefs";
 
 	TextView mTextViewSongInfo;
 	SeekBar mSeekBarVolume;
@@ -63,13 +67,11 @@ public class MainActivity extends Activity {
 						mSongInfoService.startStream();
 					}
 				}
-			}
-		});
-		
-		mButtonPlayStop.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-				Log.d(TAG, "Click on Play/Stop Button");
+				
+	            SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+	            SharedPreferences.Editor editor = settings.edit();
+	            editor.putBoolean("is_playing", mSongInfoService.isStreamStarted());
+	            editor.commit();
 			}
 		});
 
@@ -106,6 +108,12 @@ public class MainActivity extends Activity {
 		);
 	}
 
+	public boolean onCreateOptionsMenu(Menu menu) {
+		mButtonPlayStop.setChecked(!mButtonPlayStop.isChecked());
+		
+	    return false;
+	}
+	
 	@Override
 	protected void onStart() {
 		super.onStart();
@@ -118,13 +126,17 @@ public class MainActivity extends Activity {
 			mServiceStarted = true;
 			
 			// Set the custom font for the text areas
-			mTextViewSongInfo.setText(R.string.retrieveing_song_details);			
-		}		
+			mTextViewSongInfo.setText(R.string.retrieveing_song_details);
+		}
 		
         Intent intent = new Intent(this, SongInfoService.class);
-        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);
+        bindService(intent, mConnection, Context.BIND_AUTO_CREATE);        
 	}
 
+	private void setStreamPlaying(Boolean playing) {
+		
+	}
+	
 	@Override
 	protected void onStop() {
 		super.onStop();
@@ -187,10 +199,20 @@ public class MainActivity extends Activity {
             mSongInfoService = binder.getService();
             mBound = true;
             
+            // Start stream if settings says we should
+            if (mSongInfoService.isStreamStarted() != true) {
+       	       SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
+       	       boolean is_playing = settings.getBoolean("is_playing", false);
+       	       if (is_playing) {
+       	    	   mSongInfoService.startStream();
+       	       }
+            }            
+            
             // Update the UI from the service
             mSongInfoService.broadcastSongDetails();
         }
 
+        
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
             mBound = false;
