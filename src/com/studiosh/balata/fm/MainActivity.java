@@ -15,9 +15,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.util.Log;
 import android.view.Menu;
-import android.view.MenuInflater;
-import android.view.View;
-import android.view.View.OnClickListener;
 import android.widget.CompoundButton;
 import android.widget.CompoundButton.OnCheckedChangeListener;
 import android.widget.SeekBar;
@@ -132,10 +129,6 @@ public class MainActivity extends Activity {
         Intent intent = new Intent(this, SongInfoService.class);
         bindService(intent, mConnection, Context.BIND_AUTO_CREATE);        
 	}
-
-	private void setStreamPlaying(Boolean playing) {
-		
-	}
 	
 	@Override
 	protected void onStop() {
@@ -149,15 +142,9 @@ public class MainActivity extends Activity {
 		if (mServiceStarted && !mSongInfoService.isStreamStarted()) {
 			stopService(new Intent(this, SongInfoService.class));
 			mServiceStarted = false;
-		}        
+		}
 	}
 	
-	@Override
-	protected void onDestroy() {
-		super.onDestroy();
-		Log.d(TAG, "Activity destroyed");
-	}
-
 	@Override
 	protected void onResume() {
 		super.onResume();
@@ -211,7 +198,6 @@ public class MainActivity extends Activity {
             // Update the UI from the service
             mSongInfoService.broadcastSongDetails();
         }
-
         
         @Override
         public void onServiceDisconnected(ComponentName arg0) {

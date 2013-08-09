@@ -1,11 +1,12 @@
 package com.studiosh.balata.fm;
 
+import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 
 public class BalataStreamer implements MediaPlayer.OnPreparedListener {
 	private MediaPlayer media_player;
-
+	
 	private final String OGG_STREAM = "http://stream.balata.fm/stream.ogg";
 	private final String MP3_STREAM = "http://stream.balata.fm/stream.mp3";
 

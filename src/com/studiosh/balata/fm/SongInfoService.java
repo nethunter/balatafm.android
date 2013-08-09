@@ -50,6 +50,8 @@ public class SongInfoService extends Service {
     public IBinder onBind(Intent intent) {
     	mBound = true;
     	
+    	Log.d(TAG, "Bound service");
+    	
     	if (mGotSongInfo) {
     		broadcastSongDetails();
     	}
@@ -60,6 +62,7 @@ public class SongInfoService extends Service {
     @Override
     public boolean onUnbind(Intent intent) {
     	mBound = false;
+    	Log.d(TAG, "Unbound service");
     	return super.onUnbind(intent);
     }
 
