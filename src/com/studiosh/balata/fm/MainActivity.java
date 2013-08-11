@@ -104,12 +104,6 @@ public class MainActivity extends Activity {
 			}
 		);
 	}
-
-	public boolean onCreateOptionsMenu(Menu menu) {
-		mButtonPlayStop.setChecked(!mButtonPlayStop.isChecked());
-		
-	    return false;
-	}
 	
 	@Override
 	protected void onStart() {
@@ -142,6 +136,7 @@ public class MainActivity extends Activity {
 		if (mServiceStarted && !mSongInfoService.isStreamStarted()) {
 			stopService(new Intent(this, SongInfoService.class));
 			mServiceStarted = false;
+			finish();
 		}
 	}
 	
@@ -149,7 +144,7 @@ public class MainActivity extends Activity {
 	protected void onResume() {
 		super.onResume();
 		registerReceiver(broadcastReceiver, new IntentFilter(
-				SongInfoService.BROADCAST_ACTION));		
+				BalataNotifier.SONG_DETAILS_ACTION));		
 	}
 
 	@Override
@@ -196,7 +191,7 @@ public class MainActivity extends Activity {
             }            
             
             // Update the UI from the service
-            mSongInfoService.broadcastSongDetails();
+            broadcastSongDetails();
         }
         
         @Override

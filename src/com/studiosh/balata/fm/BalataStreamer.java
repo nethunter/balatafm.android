@@ -5,46 +5,67 @@ import android.media.AudioManager;
 import android.media.MediaPlayer;
 
 public class BalataStreamer implements MediaPlayer.OnPreparedListener {
-	private MediaPlayer media_player;
+	private MediaPlayer mMediaPlayer;
+	private BalataNotifier mBalataNotifier;
+	
+	private Boolean mStreamStarted = false;
+	private Boolean mPrevStreamState = false;
 	
 	private final String OGG_STREAM = "http://stream.balata.fm/stream.ogg";
 	private final String MP3_STREAM = "http://stream.balata.fm/stream.mp3";
 
-	public BalataStreamer() {
-		media_player = new MediaPlayer();
-		media_player.setAudioStreamType(AudioManager.STREAM_MUSIC);
+	public BalataStreamer(BalataNotifier balataNotifier) {
+		mMediaPlayer = new MediaPlayer();
+		mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
+		
+		mBalataNotifier = balataNotifier;
 		
 		try {
-			media_player.setDataSource(OGG_STREAM);
+			mMediaPlayer.setDataSource(OGG_STREAM);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 		
-		media_player.setOnPreparedListener(this);
+		mMediaPlayer.setOnPreparedListener(this);
 	}
 
+	public Boolean isStreamStarted() {
+		return mStreamStarted;
+	}
+	
 	@Override
 	public void onPrepared(MediaPlayer mp) {
 		mp.start();
+		mBalataNotifier.setBuffering(false);
 	}
 
 	public void play() {
-		if (!media_player.isPlaying()) {
-			media_player.prepareAsync();
+		if (!mMediaPlayer.isPlaying()) {
+			mBalataNotifier.setBuffering(true);
+			mMediaPlayer.prepareAsync();
+			mStreamStarted = true;
 		}
 	}
 
-	public void pause() {
-		media_player.pause();
+	public void pause(Boolean pause) {
+		if (pause == true) {
+			mPrevStreamState = mStreamStarted;
+			mMediaPlayer.pause();
+		} else {
+			if (mPrevStreamState == true) {
+				play();
+			}
+		}
 	}
 
 	public void stop() {
-		media_player.stop();
+		mStreamStarted = false;
+		mMediaPlayer.stop();
 	}
 	
 	public void destroy() {
 		stop();
-		media_player = null;
+		mMediaPlayer = null;
 	}
 }

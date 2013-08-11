@@ -9,5 +9,6 @@
     <string name="retrieveing_song_details">Retrieveing song details…</string>
     <string name="balata_fm_logo">Balata.FM Logo</string>
     <string name="play_pause_button">Play/Pause Button</string>
+    <string name="buffering">Buffering...</string>
 
 </resources>

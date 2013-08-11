@@ -17,7 +17,7 @@ import org.json.JSONObject;
 
 import android.util.Log;
 
-public class BackgroundUpdater extends Thread {
+public class BalataUpdater extends Thread {
 	private SongInfoService mSongInfoService;
 	private Boolean mRunFlag;
 	private static final String TAG = "Background-Updater";
@@ -25,7 +25,7 @@ public class BackgroundUpdater extends Thread {
 	static final int DELAY_BG = 10000;
 	static final int DELAY_FG = 30000;
 
-	public BackgroundUpdater(SongInfoService songInfoService) {
+	public BalataUpdater(SongInfoService songInfoService) {
 		super("UpdaterService-Updater");
 		mSongInfoService = songInfoService;
 	}
