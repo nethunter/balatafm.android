@@ -18,16 +18,16 @@ import org.json.JSONObject;
 import android.util.Log;
 
 public class BalataUpdater extends Thread {
-	private SongInfoService mSongInfoService;
+	private BalataNotifier mNotifier;
 	private Boolean mRunFlag;
 	private static final String TAG = "Background-Updater";
 
 	static final int DELAY_BG = 10000;
 	static final int DELAY_FG = 30000;
 
-	public BalataUpdater(SongInfoService songInfoService) {
+	public BalataUpdater(BalataNotifier notifier) {
 		super("UpdaterService-Updater");
-		mSongInfoService = songInfoService;
+		mNotifier = notifier;
 	}
 
 	@Override
@@ -61,8 +61,7 @@ public class BalataUpdater extends Thread {
 				Log.i(TAG, "Artist " + song_artist);
 				Log.i(TAG, "Title " + song_title);
 
-				mSongInfoService.updateSongDetails(song_artist, song_title,
-						listeners);
+				mNotifier.updateSongDetails(song_artist, song_title);
 				Thread.sleep(DELAY_FG);
 			} catch (JSONException e) {
 				e.printStackTrace();

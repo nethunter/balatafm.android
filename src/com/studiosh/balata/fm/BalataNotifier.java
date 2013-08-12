@@ -6,22 +6,19 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
 import android.support.v4.app.NotificationCompat;
-import android.util.Log;
-import android.widget.TextView;
 
 public class BalataNotifier {
 	private static final String TAG = "BalataNotifier";
 	
 	private SongInfoService mSongInfoService;
+	private MainActivity mMainActivity;
 	private String mSongArtist;
 	private String mSongTitle;
-	private Boolean mGotSongInfo = false;
 	private Boolean mBuffering = false;
 	private Boolean mPlaying = false;
-	private Boolean mBound = false;
-	
-    public static final String SONG_DETAILS_ACTION = "com.studiosh.balata.fm.SONG_DETAILS_UPDATE";
-    private final Handler handler = new Handler();
+		
+	public static final String SONG_DETAILS_ACTION = "com.studiosh.balata.fm.SONG_DETAILS_UPDATE";
+	private final Handler handler = new Handler();
 	
 	static final int NOTIFY_ID = 1345;	
 	
@@ -29,16 +26,19 @@ public class BalataNotifier {
 	
 	public BalataNotifier(SongInfoService songInfoService) {
 		mSongInfoService = songInfoService;
+		
+		handler.removeCallbacks(sendUpdatesToUI);
 	}
 	
-	public void setActivity(MainActivity activity) {
-		TextView tv = (TextView)activity.findViewById(R.id.tv_song_info);
-		tv.setText(mSongTitle + " - " + mSongArtist);
-	}	
+	public void setMainActivity(MainActivity activity) {
+		mMainActivity = activity;
+	}
+	
+	public void clearMainActivity() {
+		mMainActivity = null;
+	}
 
-	public void startNotification() {
-		handler.removeCallbacks(sendUpdatesToUI);
-		
+	public void startNotification() {	
 		if (mNotifyBuild == null) {
 			Intent intent = new Intent(mSongInfoService.getApplicationContext(), MainActivity.class);
 			intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK 
@@ -77,45 +77,54 @@ public class BalataNotifier {
 		mSongArtist = songArtist;
 		
 		updateNotification(songArtist + " - " + songTitle);
-		
-		if (mBound) {
-			handler.postDelayed(sendUpdatesToUI, 1000);
-		}		
+		updateUI();
 	}
 	
 	public void setBuffering(Boolean buffering) {
-		mBuffering = buffering;
-		
-		if (buffering == true) {
-			updateNotification(mSongInfoService.getString(R.string.buffering));
-		} else {
-			updateNotification(mSongArtist + " - " + mSongTitle);
-		}
+		mBuffering = buffering;	
+		updateUI();
 	}
 	
 	public void setPlaying(Boolean playing) {
 		mPlaying = playing;
+		updateUI();
 	}
 	
-	public void setBound(Boolean bound) {
-		mBound = bound;
+	public void updateUI() {
+		if (mBuffering == true) {
+			updateNotification(mSongInfoService.getString(R.string.buffering));
+		} else {
+			updateNotification(mSongArtist + " - " + mSongTitle);
+		}
+		
+		if (mMainActivity != null) {
+			mMainActivity.runOnUiThread(sendUpdatesToUI);
+		}
 	}
 
 	public void broadcastSongDetails() {
-		if (mGotSongInfo) {
-			Intent intent = new Intent(SONG_DETAILS_ACTION);
-			intent.putExtra("song_artist", mSongArtist);
-			intent.putExtra("song_title", mSongTitle);
-			intent.putExtra("is_playing", mPlaying);
-			
-			mSongInfoService.sendBroadcast(intent);
-		}
+		Intent intent = new Intent(SONG_DETAILS_ACTION);
+		intent.putExtra("song_artist", mSongArtist);
+		intent.putExtra("song_title", mSongTitle);
+		intent.putExtra("buffering", mBuffering);
+		intent.putExtra("playing", mPlaying);
+		
+		mSongInfoService.sendBroadcast(intent);		
 	}
 	
-    private Runnable sendUpdatesToUI = new Runnable() {
-    	public void run() {
-    		broadcastSongDetails();
-    		Log.d(TAG, "Updating UI with song details");
-    	}
-    };	
+	private Runnable sendUpdatesToUI = new Runnable() {
+		public void run() {
+			broadcastSongDetails();
+		}
+	};
+	
+	/**
+	 * Update the song details in the 
+	 */
+	public void updateSongDetails(String songArtist, String songTitle) {
+		mSongArtist = songArtist;
+		mSongTitle = songTitle;
+		
+		setSongDetails(mSongArtist, mSongTitle);
+	}
 }

@@ -1,6 +1,5 @@
 package com.studiosh.balata.fm;
 
-import android.content.Context;
 import android.media.AudioManager;
 import android.media.MediaPlayer;
 
@@ -36,15 +35,18 @@ public class BalataStreamer implements MediaPlayer.OnPreparedListener {
 	
 	@Override
 	public void onPrepared(MediaPlayer mp) {
-		mp.start();
+		if (mStreamStarted == true) {
+			mp.start();
+		}
 		mBalataNotifier.setBuffering(false);
 	}
 
 	public void play() {
 		if (!mMediaPlayer.isPlaying()) {
+			mStreamStarted = true;
+			mBalataNotifier.setPlaying(true);
 			mBalataNotifier.setBuffering(true);
 			mMediaPlayer.prepareAsync();
-			mStreamStarted = true;
 		}
 	}
 
@@ -60,8 +62,10 @@ public class BalataStreamer implements MediaPlayer.OnPreparedListener {
 	}
 
 	public void stop() {
-		mStreamStarted = false;
-		mMediaPlayer.stop();
+		mStreamStarted = false;		
+		mBalataNotifier.setBuffering(false);
+		mBalataNotifier.setPlaying(false);
+		mMediaPlayer.stop();		
 	}
 	
 	public void destroy() {

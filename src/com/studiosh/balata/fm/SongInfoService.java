@@ -3,22 +3,16 @@ package com.studiosh.balata.fm;
 import android.app.Service;
 import android.content.Intent;
 import android.os.Binder;
-import android.os.Handler;
 import android.os.IBinder;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 import android.util.Log;
-import android.widget.TextView;
 
 public class SongInfoService extends Service {
 	private static final String TAG = "SongInfoService";
 
 	private static BalataUpdater mUpdater;
-		
-	private Boolean mGotSongInfo = false;
-	private String mSongTitle;
-	private String mSongArtist;
-	
+			
 	private static BalataStreamer mBalataStreamer;
 	private static BalataNotifier mBalataNotifier;
 		
@@ -26,7 +20,6 @@ public class SongInfoService extends Service {
 	    
     // Binder given to clients
     private final IBinder mBinder = new LocalBinder();
-    private static Boolean mBound = false;
 
     /**
      * Class used for the client Binder.  Because we know this service always
@@ -38,36 +31,25 @@ public class SongInfoService extends Service {
             return SongInfoService.this;
         }
     }
-
-    @Override
-    public IBinder onBind(Intent intent) {
-    	SongInfoService.mBound = true;
-    	
-    	Log.d(TAG, "Bound service");
-    	
-        return mBinder;
-    }
     
-    @Override
-    public boolean onUnbind(Intent intent) {
-    	mBound = false;
-    	Log.d(TAG, "Unbound service");
-    	return super.onUnbind(intent);
-    }
-
+	@Override
+	public IBinder onBind(Intent intent) {
+		return mBinder;
+	}
+    
 	// General Service Logic
 	@Override
 	public void onCreate() {
 		super.onCreate();
-		
-		if (mUpdater == null) {
-			mUpdater = new BalataUpdater(this);
-		}
-				
+						
 		if (mBalataNotifier == null) {
 			mBalataNotifier = new BalataNotifier(this);
 		}
 
+		if (mUpdater == null) {
+			mUpdater = new BalataUpdater(mBalataNotifier);
+		}
+		
 		if (mBalataStreamer == null) {
 			mBalataStreamer = new BalataStreamer(mBalataNotifier);
 		}
@@ -135,11 +117,7 @@ public class SongInfoService extends Service {
 		return mBalataStreamer;
 	}
 	
-	/**
-	 * Update the song details in the 
-	 */
-	public void updateSongDetails(String song_artist, String song_title) {
-		
-		mBalataNotifier.setSongDetails(mSongArtist, mSongTitle);
+	public BalataNotifier getNotifier() {
+		return mBalataNotifier;
 	}
 }
