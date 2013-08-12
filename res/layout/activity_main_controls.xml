@@ -42,5 +42,5 @@
         android:layout_marginLeft="33dp"
         android:layout_marginRight="45dp"
         android:layout_toLeftOf="@+id/btn_play_stop" />
-
+    
 </RelativeLayout>

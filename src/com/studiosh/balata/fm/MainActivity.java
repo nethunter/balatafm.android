@@ -15,6 +15,10 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.view.animation.Animation;
+import android.view.animation.AnimationUtils;
+import android.widget.ImageView;
+import android.widget.ProgressBar;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
@@ -144,7 +148,9 @@ public class MainActivity extends Activity {
 	public void updateUI (Intent intent) {
 		TextView tvSongInfo = (TextView) findViewById(R.id.tv_song_info);
 		ToggleButton btnPlayStop = (ToggleButton) findViewById(R.id.btn_play_stop);
-		
+		ImageView imgBalataLogo = (ImageView) findViewById(R.id.balata_logo);
+		ProgressBar pbBuffering = (ProgressBar) findViewById(R.id.buffering);
+
 		String songArtist = intent.getStringExtra("song_artist");
 		String songTitle = intent.getStringExtra("song_title");
 		Boolean playing = intent.getBooleanExtra("playing", false);
@@ -154,8 +160,16 @@ public class MainActivity extends Activity {
 		
 		if (buffering) {
 			tvSongInfo.setText(getString(R.string.buffering));
+			Animation animFade = AnimationUtils.loadAnimation(getApplicationContext(), R.anim.balata_logo_fades);
+			imgBalataLogo.startAnimation(animFade);
+			pbBuffering.setVisibility(View.VISIBLE);
 		} else {
-			tvSongInfo.setText(songArtist + "\n" + songTitle);
+			if (songArtist != null && songTitle != null) {
+				tvSongInfo.setText(songArtist + "\n" + songTitle);
+			}
+			
+			imgBalataLogo.setAnimation(null);
+			pbBuffering.setVisibility(View.INVISIBLE);			
 		}
 	}
 	

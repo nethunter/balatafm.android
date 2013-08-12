@@ -20,7 +20,7 @@ public class BalataStreamer implements MediaPlayer.OnPreparedListener {
 		mBalataNotifier = balataNotifier;
 		
 		try {
-			mMediaPlayer.setDataSource(OGG_STREAM);
+			mMediaPlayer.setDataSource(MP3_STREAM);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -56,7 +56,7 @@ public class BalataStreamer implements MediaPlayer.OnPreparedListener {
 			mMediaPlayer.pause();
 		} else {
 			if (mPrevStreamState == true) {
-				play();
+				mMediaPlayer.start();
 			}
 		}
 	}

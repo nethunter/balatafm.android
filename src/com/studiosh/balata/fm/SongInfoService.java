@@ -95,21 +95,26 @@ public class SongInfoService extends Service {
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
-
-		if (mBalataStreamer != null) {
-			mBalataStreamer.destroy();
-			mBalataStreamer = null;
-		}
 		
 		// Stop phone state listener
 		TelephonyManager mgr = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
 		if(mgr != null) {
 		    mgr.listen(mPhoneStateListener, PhoneStateListener.LISTEN_NONE);
 		}
-		
+				
 		mUpdater.interrupt();
 		mUpdater = null;
 
+		if (mBalataStreamer != null) {
+			mBalataStreamer.destroy();
+			mBalataStreamer = null;
+		}
+		
+		if (mBalataNotifier != null) {
+			mBalataNotifier.destroy();
+			mBalataNotifier = null;
+		}
+		
 		Log.d(TAG, "Service destroyed");
 	}
 	

@@ -27,4 +27,16 @@
         android:layout_alignParentLeft="true"
         layout="@layout/activity_main_controls" />
 
+    <ProgressBar
+        android:id="@+id/buffering"
+        style="@style/BufferBar"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBottom="@+id/balata_logo"
+        android:layout_alignLeft="@+id/balata_logo"
+        android:layout_alignRight="@+id/balata_logo"
+        android:layout_marginBottom="23dp"
+        android:layout_marginLeft="35dp"
+        android:layout_marginRight="35dp" />
+
 </RelativeLayout>

@@ -30,6 +30,10 @@ public class BalataNotifier {
 		handler.removeCallbacks(sendUpdatesToUI);
 	}
 	
+	protected void destroy() {
+		stopNotification();
+	}
+	
 	public void setMainActivity(MainActivity activity) {
 		mMainActivity = activity;
 	}
@@ -67,6 +71,14 @@ public class BalataNotifier {
 		        		Context.NOTIFICATION_SERVICE);
 		
 		notify_manager.notify(NOTIFY_ID, mNotifyBuild.build());		
+	}
+	
+	public void stopNotification() {
+		NotificationManager notify_manager =
+		        (NotificationManager) mSongInfoService.getApplicationContext().getSystemService(
+		        		Context.NOTIFICATION_SERVICE);
+
+		notify_manager.cancel(NOTIFY_ID);
 	}
 	
 	/**
