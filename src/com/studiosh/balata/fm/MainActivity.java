@@ -13,10 +13,8 @@ import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.IBinder;
-import android.util.Log;
-import android.view.Menu;
-import android.widget.CompoundButton;
-import android.widget.CompoundButton.OnCheckedChangeListener;
+import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.SeekBar;
 import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
@@ -28,16 +26,10 @@ public class MainActivity extends Activity {
 	private static final String TAG = "MainActivity";
     public static final String PREFS_NAME = "BalataPrefs";
 
-	TextView mTextViewSongInfo;
-	SeekBar mSeekBarVolume;
-
 	private static SongInfoService mSongInfoService;
 	private static Boolean mServiceStarted = false;
 	private Boolean mBound = false;
 	
-	private ToggleButton mButtonPlayStop;
-	private static Boolean mPlaying = true;
-
 	private Intent mServiceIntent;
 
 	@Override
@@ -45,41 +37,40 @@ public class MainActivity extends Activity {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
 
-		// Prepare the text views that will hold the artist details
-		mTextViewSongInfo = (TextView) findViewById(R.id.tv_song_info);
-
 		// Handle the Start/Stop Button
-		mButtonPlayStop = (ToggleButton) findViewById(R.id.btn_play_stop);
-		mButtonPlayStop.setOnCheckedChangeListener(new OnCheckedChangeListener() {
-			@Override
-			public void onCheckedChanged(CompoundButton buttonView,
-					boolean isChecked) {
+		ToggleButton btnPlayStop = (ToggleButton) findViewById(R.id.btn_play_stop);
+		btnPlayStop.setOnClickListener(new OnClickListener() {
+			public void onClick(View v) {
+				ToggleButton tb = (ToggleButton) v;
+				Boolean isChecked = tb.isChecked(); 
+				
+				BalataStreamer streamer = mSongInfoService.getStreamer();
 				
 				if (!isChecked) {
-					if (mSongInfoService.isStreamStarted()) {
-						mSongInfoService.stopStream();
+					if (streamer.isStreamStarted()) {
+						streamer.stop();
 					}
 				} else {
-					if (!mSongInfoService.isStreamStarted()) {
-						mSongInfoService.startStream();
+					if (!streamer.isStreamStarted()) {
+						streamer.play();
 					}
 				}
 				
 	            SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
 	            SharedPreferences.Editor editor = settings.edit();
-	            editor.putBoolean("is_playing", mSongInfoService.isStreamStarted());
-	            editor.commit();
+	            editor.putBoolean("is_playing", streamer.isStreamStarted());
+	            editor.commit();				
 			}
 		});
 
-		// Set the volume seekbar
-		mSeekBarVolume = (SeekBar) findViewById(R.id.sb_volume);	
+		// Set the volume seek bar
+		final SeekBar sbVolume = (SeekBar) findViewById(R.id.sb_volume);	
 		final AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 		
 		// First let's handle the seek bar
-		mSeekBarVolume.setMax(audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
-		mSeekBarVolume.setProgress(audio.getStreamVolume(AudioManager.STREAM_MUSIC));
-		mSeekBarVolume.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
+		sbVolume.setMax(audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
+		sbVolume.setProgress(audio.getStreamVolume(AudioManager.STREAM_MUSIC));
+		sbVolume.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
 			public void onStopTrackingTouch(SeekBar seekBar) {}
 			public void onStartTrackingTouch(SeekBar seekBar) {}
 			
@@ -98,17 +89,11 @@ public class MainActivity extends Activity {
 			new ContentObserver(new Handler()) {
 				public void onChange(boolean selfChange) {
 					super.onChange(selfChange);
-					mSeekBarVolume.setProgress(audio
+					sbVolume.setProgress(audio
 							.getStreamVolume(AudioManager.STREAM_MUSIC));
 				}
 			}
 		);
-	}
-
-	public boolean onCreateOptionsMenu(Menu menu) {
-		mButtonPlayStop.setChecked(!mButtonPlayStop.isChecked());
-		
-	    return false;
 	}
 	
 	@Override
@@ -116,14 +101,14 @@ public class MainActivity extends Activity {
 		super.onStart();
 			
 		// Start the updates service
-		Log.d(TAG, "About to start the service...");
 		if (mServiceStarted == false) {
 			mServiceIntent = new Intent(this, SongInfoService.class);
 			startService(mServiceIntent);
 			mServiceStarted = true;
 			
 			// Set the custom font for the text areas
-			mTextViewSongInfo.setText(R.string.retrieveing_song_details);
+			TextView tvSongInfo = (TextView) findViewById(R.id.tv_song_info); 
+			tvSongInfo.setText(R.string.retrieveing_song_details);
 		}
 		
         Intent intent = new Intent(this, SongInfoService.class);
@@ -139,37 +124,43 @@ public class MainActivity extends Activity {
             mBound = false;            
         }
         
-		if (mServiceStarted && !mSongInfoService.isStreamStarted()) {
+		if (mServiceStarted && !mSongInfoService.getStreamer().isStreamStarted()) {
 			stopService(new Intent(this, SongInfoService.class));
 			mServiceStarted = false;
+			finish();
 		}
 	}
 	
-	@Override
 	protected void onResume() {
 		super.onResume();
-		registerReceiver(broadcastReceiver, new IntentFilter(
-				SongInfoService.BROADCAST_ACTION));		
+		registerReceiver(mBroadcastReciever, new IntentFilter(BalataNotifier.SONG_DETAILS_ACTION));           
 	}
-
-	@Override
-	protected void onPause() {
-		super.onPause();
-		unregisterReceiver(broadcastReceiver);
-	};
 	
-	private void updateUI(Intent intent) {
-		String song_artist = intent.getStringExtra("song_artist");
-		String song_title = intent.getStringExtra("song_title");
-		int listeners = intent.getIntExtra("listeners", 0);
-		Boolean is_playing = intent.getBooleanExtra("is_playing", false);
-
-		mTextViewSongInfo.setText(song_artist + "\n" + song_title);
-		mButtonPlayStop.setChecked(is_playing);
-		Log.d(TAG, "Amount of listeners: " + Integer.toString(listeners));
+	protected void noPause() {
+		super.onPause();
+		unregisterReceiver(mBroadcastReciever);
 	}
 
-	private BroadcastReceiver broadcastReceiver = new BroadcastReceiver() {
+	public void updateUI (Intent intent) {
+		TextView tvSongInfo = (TextView) findViewById(R.id.tv_song_info);
+		ToggleButton btnPlayStop = (ToggleButton) findViewById(R.id.btn_play_stop);
+		
+		String songArtist = intent.getStringExtra("song_artist");
+		String songTitle = intent.getStringExtra("song_title");
+		Boolean playing = intent.getBooleanExtra("playing", false);
+		Boolean buffering = intent.getBooleanExtra("buffering", false);
+		
+		btnPlayStop.setChecked(playing);
+		
+		if (buffering) {
+			tvSongInfo.setText(getString(R.string.buffering));
+		} else {
+			tvSongInfo.setText(songArtist + "\n" + songTitle);
+		}
+	}
+	
+	private BroadcastReceiver mBroadcastReciever = new BroadcastReceiver() {
+		
 		@Override
 		public void onReceive(Context context, Intent intent) {
 			updateUI(intent);
@@ -184,26 +175,32 @@ public class MainActivity extends Activity {
             // We've bound to LocalService, cast the IBinder and get LocalService instance
             LocalBinder binder = (LocalBinder) service;
             mSongInfoService = binder.getService();
+            BalataNotifier notifier = mSongInfoService.getNotifier();
+            BalataStreamer streamer = mSongInfoService.getStreamer();
+            
+            notifier.setMainActivity(MainActivity.this);
+            
             mBound = true;
             
             // Start stream if settings says we should
-            if (mSongInfoService.isStreamStarted() != true) {
+            if (streamer.isStreamStarted() != true) {            	
        	       SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
        	       boolean is_playing = settings.getBoolean("is_playing", false);
        	       if (is_playing) {
-       	    	   mSongInfoService.startStream();
+       	    	   streamer.play();
        	       }
             }            
             
             // Update the UI from the service
-            mSongInfoService.broadcastSongDetails();
+            notifier.updateUI();
         }
         
         @Override
         public void onServiceDisconnected(ComponentName arg0) {
             mBound = false;
+            mSongInfoService.getNotifier().clearMainActivity();
             
-    		if (mServiceStarted && !mSongInfoService.isStreamStarted()) {
+    		if (mServiceStarted && !mSongInfoService.getStreamer().isStreamStarted()) {
     			stopService(mServiceIntent);
     		}            
         }
