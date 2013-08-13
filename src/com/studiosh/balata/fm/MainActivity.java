@@ -136,13 +136,13 @@ public class MainActivity extends Activity {
 	}
 	
 	protected void onResume() {
-		super.onResume();
-		registerReceiver(mBroadcastReciever, new IntentFilter(BalataNotifier.SONG_DETAILS_ACTION));           
+		super.onResume();		
+		registerReceiver(mSongDetailsReciever, new IntentFilter(BalataNotifier.SONG_DETAILS_ACTION));           
 	}
 	
 	protected void noPause() {
 		super.onPause();
-		unregisterReceiver(mBroadcastReciever);
+		unregisterReceiver(mSongDetailsReciever);
 	}
 
 	public void updateUI (Intent intent) {
@@ -173,10 +173,10 @@ public class MainActivity extends Activity {
 		}
 	}
 	
-	private BroadcastReceiver mBroadcastReciever = new BroadcastReceiver() {
+	private BroadcastReceiver mSongDetailsReciever = new BroadcastReceiver() {
 		
 		@Override
-		public void onReceive(Context context, Intent intent) {
+		public void onReceive(Context context, Intent intent) {		
 			updateUI(intent);
 		}
 	};

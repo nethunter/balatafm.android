@@ -1,7 +1,10 @@
 package com.studiosh.balata.fm;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Binder;
 import android.os.IBinder;
 import android.telephony.PhoneStateListener;
@@ -15,7 +18,9 @@ public class SongInfoService extends Service {
 			
 	private static BalataStreamer mBalataStreamer;
 	private static BalataNotifier mBalataNotifier;
-		
+
+    public static final String COMMAND_ACTION = "com.studiosh.balata.fm.COMMAND";
+	
 	private PhoneStateListener mPhoneStateListener;
 	    
     // Binder given to clients
@@ -53,6 +58,8 @@ public class SongInfoService extends Service {
 		if (mBalataStreamer == null) {
 			mBalataStreamer = new BalataStreamer(mBalataNotifier);
 		}
+		
+		registerReceiver(mCommandReciever, new IntentFilter(COMMAND_ACTION));
 		
 		Log.d(TAG, "Service created");
 	}
@@ -92,9 +99,27 @@ public class SongInfoService extends Service {
 
 	}
 	
+	private BroadcastReceiver mCommandReciever = new BroadcastReceiver() {
+		public void onReceive(Context context, Intent intent) {
+			if (intent.getAction() == COMMAND_ACTION) {
+				BalataStreamer streamer = getStreamer();
+
+				String command = intent.getStringExtra("COMMAND");
+				
+				if (command.equals("play")) {
+					streamer.play();
+				} else if (command.equals("stop")) {
+					streamer.stop();
+				}
+			}			
+		}
+	};	
+	
 	@Override
 	public void onDestroy() {
 		super.onDestroy();
+		
+		unregisterReceiver(mCommandReciever);
 		
 		// Stop phone state listener
 		TelephonyManager mgr = (TelephonyManager) getSystemService(TELEPHONY_SERVICE);
