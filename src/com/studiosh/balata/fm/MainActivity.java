@@ -131,7 +131,6 @@ public class MainActivity extends Activity {
 		if (mServiceStarted && !mSongInfoService.getStreamer().isStreamStarted()) {
 			stopService(new Intent(this, SongInfoService.class));
 			mServiceStarted = false;
-			finish();
 		}
 	}
 	
