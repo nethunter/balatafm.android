@@ -20,7 +20,7 @@ public class BalataStreamer implements MediaPlayer.OnPreparedListener {
 		mBalataNotifier = balataNotifier;
 		
 		try {
-			mMediaPlayer.setDataSource(MP3_STREAM);
+			mMediaPlayer.setDataSource(OGG_STREAM);
 		} catch (Exception e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();

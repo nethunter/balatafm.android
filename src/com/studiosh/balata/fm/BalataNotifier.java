@@ -70,6 +70,12 @@ public class BalataNotifier {
 		        (NotificationManager) mSongInfoService.getApplicationContext().getSystemService(
 		        		Context.NOTIFICATION_SERVICE);
 		
+		if (mBuffering == true) {
+			mNotifyBuild.setProgress(0, 0, true);
+		} else {
+			mNotifyBuild.setProgress(0, 0, false);
+		}
+		
 		notify_manager.notify(NOTIFY_ID, mNotifyBuild.build());		
 	}
 	
@@ -93,7 +99,7 @@ public class BalataNotifier {
 	}
 	
 	public void setBuffering(Boolean buffering) {
-		mBuffering = buffering;	
+		mBuffering = buffering;		
 		updateUI();
 	}
 	
