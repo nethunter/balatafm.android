@@ -156,6 +156,8 @@ public class MainActivity extends Activity {
 		Boolean buffering = intent.getBooleanExtra("buffering", false);
 		
 		btnPlayStop.setChecked(playing);
+		// btnPlayStop.setClickable(!buffering);
+		btnPlayStop.setEnabled(!buffering);
 		
 		if (buffering) {
 			tvSongInfo.setText(getString(R.string.buffering));

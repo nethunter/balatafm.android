@@ -42,10 +42,10 @@ public class BalataStreamer implements MediaPlayer.OnPreparedListener {
 	}
 
 	public void play() {
-		if (!mMediaPlayer.isPlaying()) {
+		if (!mMediaPlayer.isPlaying() && mStreamStarted == false) {
 			mStreamStarted = true;
 			mBalataNotifier.setPlaying(true);
-			mBalataNotifier.setBuffering(true);
+			mBalataNotifier.setBuffering(true);			
 			mMediaPlayer.prepareAsync();
 		}
 	}
@@ -62,10 +62,12 @@ public class BalataStreamer implements MediaPlayer.OnPreparedListener {
 	}
 
 	public void stop() {
-		mStreamStarted = false;		
-		mBalataNotifier.setBuffering(false);
-		mBalataNotifier.setPlaying(false);
-		mMediaPlayer.stop();		
+		if (mMediaPlayer.isPlaying() == true) {
+			mStreamStarted = false;
+			mBalataNotifier.setBuffering(false);
+			mBalataNotifier.setPlaying(false);
+			mMediaPlayer.stop();
+		}
 	}
 	
 	public void destroy() {
