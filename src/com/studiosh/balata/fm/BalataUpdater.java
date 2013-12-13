@@ -75,7 +75,7 @@ public class BalataUpdater extends Thread {
 		StringBuilder builder = new StringBuilder();
 		HttpClient client = new DefaultHttpClient();
 		HttpGet httpGet = new HttpGet(
-				"http://www.balata.fm/ajax/stream_info.json");
+				"http://balata.fm:4000/ajax/stream_info.json");
 		try {
 			HttpResponse response = client.execute(httpGet);
 			StatusLine statusLine = response.getStatusLine();
