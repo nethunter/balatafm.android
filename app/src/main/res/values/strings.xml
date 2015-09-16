@@ -10,5 +10,9 @@
     <string name="balata_fm_logo">Balata.FM Logo</string>
     <string name="play_pause_button">Play/Pause Button</string>
     <string name="buffering">Buffering...</string>
+    <string name="title_activity_debug">DebugActivity</string>
+
+    <string name="hello_world">Hello world!</string>
+    <string name="action_settings">Settings</string>
 
 </resources>

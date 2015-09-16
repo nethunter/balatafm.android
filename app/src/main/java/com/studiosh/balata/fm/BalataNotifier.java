@@ -1,55 +1,77 @@
 package com.studiosh.balata.fm;
 
+import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.os.Handler;
 import android.support.v4.app.NotificationCompat;
 
+import com.studiosh.balata.fm.BalataController.StreamingState;
+
 public class BalataNotifier {
-	public static final String SONG_DETAILS_ACTION = "com.studiosh.balata.fm.SONG_DETAILS_UPDATE";
-	static final int NOTIFY_ID = 1345;
 	private static final String TAG = "BalataNotifier";
 	private final Handler handler = new Handler();
-	private SongInfoService mSongInfoService;
-	private MainActivity mMainActivity;
-	private String mSongArtist;
-	private String mSongTitle;
-	private Boolean mBuffering = false;
-	private Boolean mPlaying = false;
-	private NotificationCompat.Builder mNotifyBuild;
-	private Runnable sendUpdatesToUI = new Runnable() {
-		public void run() {
-			broadcastSongDetails();
-		}
-	};
-	
-	public BalataNotifier(SongInfoService songInfoService) {
-		mSongInfoService = songInfoService;
 
-		handler.removeCallbacks(sendUpdatesToUI);
-	}
+    private String mSongArtist;
+    private String mSongTitle;
+    private Boolean mBuffering = false;
+    private Boolean mPlaying = false;
+
+    private Boolean mNotificationVisible = false;
+
+    private BalataController.StreamingState mStreamingState;
+	private NotificationCompat.Builder mNotifyBuild;
+
+    private BroadcastReceiver mSongDetailsReciever = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            mSongArtist = intent.getStringExtra("song_artist");
+            mSongTitle = intent.getStringExtra("song_title");
+
+            updateNotification();
+        }
+    };
+
+    private BroadcastReceiver mStreamingStateReciever = new BroadcastReceiver() {
+        @Override
+        public void onReceive(Context context, Intent intent) {
+            StreamingState streamingState =
+                    BalataController.StreamingState.values()[intent.getIntExtra("state", 0)];
+
+            boolean mBuffering = (streamingState == StreamingState.BUFFERING);
+            boolean mPlaying = (streamingState == StreamingState.PLAYING);
+
+            updateNotification();
+        }
+    };
+
+	private BalataController mController;
+	
+	public BalataNotifier() {
+		mController = BalataController.getInstance();
+
+        mController.registerReceiver(mSongDetailsReciever, new IntentFilter(BalataController.SONG_DETAILS_UPDATE));
+        mController.registerReceiver(mStreamingStateReciever, new IntentFilter(BalataController.STREAMING_STATE_UPDATE));
+    }
 	
 	protected void destroy() {
 		stopNotification();
-	}
-	
-	public void setMainActivity(MainActivity activity) {
-		mMainActivity = activity;
-	}
 
-	public void clearMainActivity() {
-		mMainActivity = null;
-	}
-	
+        mController.unregisterReceiver(mSongDetailsReciever);
+        mController.unregisterReceiver(mStreamingStateReciever);
+    }
+
 	private PendingIntent getPendingIntent() {
-		Intent intent = new Intent(mSongInfoService.getApplicationContext(), MainActivity.class);
+		Intent intent = new Intent(mController.getApplicationContext(), MainActivity.class);
 		intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK
 				| Intent.FLAG_ACTIVITY_NO_ANIMATION
 				| Intent.FLAG_ACTIVITY_NEW_TASK);
 
-		PendingIntent pi = PendingIntent.getActivity(mSongInfoService.getApplicationContext(), 0,
+		PendingIntent pi = PendingIntent.getActivity(mController.getApplicationContext(), 0,
 					intent,PendingIntent.FLAG_UPDATE_CURRENT);
 
 		return pi;
@@ -59,30 +81,32 @@ public class BalataNotifier {
 		PendingIntent pi;
 
 		Intent intent = new Intent();
-		intent.setAction(SongInfoService.COMMAND_ACTION);
+		intent.setAction(BalataController.COMMAND_ACTION);
 		intent.putExtra("COMMAND", command);
 
-		pi = PendingIntent.getBroadcast(mSongInfoService.getApplicationContext(), 12345,
+		pi = PendingIntent.getBroadcast(mController.getApplicationContext(), 12345,
 				intent, PendingIntent.FLAG_UPDATE_CURRENT);
 
 		return pi;
 	}
 	
 	private String getNotificationString() {
-		if (mBuffering) {
-			return mSongInfoService.getString(R.string.buffering);
+        boolean buffering = (mStreamingState == BalataController.StreamingState.BUFFERING);
+
+		if (buffering) {
+			return mController.getString(R.string.buffering);
 		} else {
 			if (mSongArtist != null && mSongTitle != null) {
 				return mSongArtist + " - " + mSongTitle;
 			} else {
-				return mSongInfoService.getString(R.string.retrieveing_song_details);
+				return mController.getString(R.string.retrieveing_song_details);
 			}
 		}
 	}
 	
-	public void startNotification() {
-		mNotifyBuild = new NotificationCompat.Builder(mSongInfoService)
-			.setContentTitle(mSongInfoService.getString(R.string.balatafm))
+	public Notification createNotification() {
+		mNotifyBuild = new NotificationCompat.Builder(mController.getApplicationContext())
+			.setContentTitle(mController.getString(R.string.balatafm))
 			.setSmallIcon(R.drawable.ic_notification)
 			.setOngoing(true)
 			.setContentIntent(getPendingIntent());
@@ -101,78 +125,27 @@ public class BalataNotifier {
 			}
 		}
 
-		mSongInfoService.startForeground(NOTIFY_ID, mNotifyBuild.build());
+        mNotificationVisible = true;
+		return mNotifyBuild.build();
 	}
 	
 	public void updateNotification() {
+        if (!mNotificationVisible) return;
+
 		mNotifyBuild.setContentText(getNotificationString());
 
 		NotificationManager notify_manager =
-		        (NotificationManager) mSongInfoService.getApplicationContext().getSystemService(
+		        (NotificationManager) mController.getApplicationContext().getSystemService(
 		        		Context.NOTIFICATION_SERVICE);
 
-		notify_manager.notify(NOTIFY_ID, mNotifyBuild.build());
+		notify_manager.notify(BalataController.NOTIFY_ID, mNotifyBuild.build());
 	}
 	
 	public void stopNotification() {
 		NotificationManager notify_manager =
-		        (NotificationManager) mSongInfoService.getApplicationContext().getSystemService(
+		        (NotificationManager) mController.getApplicationContext().getSystemService(
 		        		Context.NOTIFICATION_SERVICE);
 
-		notify_manager.cancel(NOTIFY_ID);
-	}
-	
-	/**
-	 * Update the system tray notification to show the song info
-	 */
-	public void setSongDetails(String songArtist, String songTitle) {
-		if (songArtist.equals(mSongArtist) || songTitle.equals(mSongArtist)) {
-			mSongTitle = songTitle;
-			mSongArtist = songArtist;
-			updateNotification();
-			updateUI();
-		}
-	}
-	
-	public void setBuffering(Boolean buffering) {
-		if (buffering != mBuffering) {
-			mBuffering = buffering;
-			startNotification();
-			updateUI();
-		}
-	}
-	
-	public void setPlaying(Boolean playing) {
-		if (playing != mPlaying) {
-			mPlaying = playing;
-			startNotification();
-			updateUI();
-		}
-	}
-
-	public void updateUI() {
-		if (mMainActivity != null) {
-			mMainActivity.runOnUiThread(sendUpdatesToUI);
-		}
-	}
-	
-	public void broadcastSongDetails() {
-		Intent intent = new Intent(SONG_DETAILS_ACTION);
-		intent.putExtra("song_artist", mSongArtist);
-		intent.putExtra("song_title", mSongTitle);
-		intent.putExtra("buffering", mBuffering);
-		intent.putExtra("playing", mPlaying);
-
-		mSongInfoService.sendBroadcast(intent);
-	}
-	
-	/**
-	 * Update the song details in the 
-	 */
-	public void updateSongDetails(String songArtist, String songTitle) {
-		mSongArtist = songArtist;
-		mSongTitle = songTitle;
-		
-		setSongDetails(mSongArtist, mSongTitle);
+		notify_manager.cancel(BalataController.NOTIFY_ID);
 	}
 }

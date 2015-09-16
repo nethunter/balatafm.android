@@ -2,31 +2,21 @@ package com.studiosh.balata.fm;
 
 import android.util.Log;
 
-import org.apache.http.HttpEntity;
-import org.apache.http.HttpResponse;
-import org.apache.http.StatusLine;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-
 public class BalataUpdater extends Thread {
+	public static final String SONG_INFO_UPDATE = "com.studiosh.balata.fm.SONGINFOUPDATE";
+
 	static final int DELAY_BG = 10000;
 	static final int DELAY_FG = 30000;
 	private static final String TAG = "Background-Updater";
-	private BalataNotifier mNotifier;
+	BalataController mContoller;
 	private Boolean mRunFlag;
 
-	public BalataUpdater(BalataNotifier notifier) {
+	public BalataUpdater() {
 		super("UpdaterService-Updater");
-		mNotifier = notifier;
+		mContoller = BalataController.getInstance();
 	}
 
 	@Override
@@ -60,7 +50,7 @@ public class BalataUpdater extends Thread {
 				Log.i(TAG, "Artist " + song_artist);
 				Log.i(TAG, "Title " + song_title);
 
-				mNotifier.updateSongDetails(song_artist, song_title);
+				mContoller.updateSongDetails(song_artist, song_title);
 				Thread.sleep(DELAY_FG);
 			} catch (JSONException e) {
 				e.printStackTrace();
@@ -70,33 +60,11 @@ public class BalataUpdater extends Thread {
 		}
 	}
 
+	/**
+	 * @todo Get JSON from server
+	 * @return String JSON from the server
+	 */
 	public String getStreamDetails() {
-		StringBuilder builder = new StringBuilder();
-		HttpClient client = new DefaultHttpClient();
-		HttpGet httpGet = new HttpGet(
-				"http://balata.fm:4000/ajax/stream_info.json");
-		try {
-			HttpResponse response = client.execute(httpGet);
-			StatusLine statusLine = response.getStatusLine();
-			int statusCode = statusLine.getStatusCode();
-			if (statusCode == 200) {
-				HttpEntity entity = response.getEntity();
-				InputStream content = entity.getContent();
-				BufferedReader reader = new BufferedReader(
-						new InputStreamReader(content));
-				String line;
-				while ((line = reader.readLine()) != null) {
-					builder.append(line);
-				}
-			} else {
-				Log.e(TAG, "Failed to retrieve JSON File");
-			}
-		} catch (ClientProtocolException e) {
-			e.printStackTrace();
-		} catch (IOException e) {
-			e.printStackTrace();
-		}
-
-		return builder.toString();
+		return "{\"listeners\": 5, \"title\": \"Blah song\", \"artist\": \"Another blah\"}";
 	}
 }

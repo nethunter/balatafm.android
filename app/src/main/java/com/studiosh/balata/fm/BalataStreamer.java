@@ -7,15 +7,15 @@ public class BalataStreamer implements MediaPlayer.OnPreparedListener {
 	private final String OGG_STREAM = "http://stream.balata.fm/stream.ogg";
 	private final String MP3_STREAM = "http://stream.balata.fm/stream.mp3";
 	private MediaPlayer mMediaPlayer;
-	private BalataNotifier mBalataNotifier;
 	private Boolean mStreamStarted = false;
 	private Boolean mPrevStreamState = false;
+	private BalataController mController;
 
-	public BalataStreamer(BalataNotifier balataNotifier) {
+	public BalataStreamer() {
+		mController = BalataController.getInstance();
+
 		mMediaPlayer = new MediaPlayer();
 		mMediaPlayer.setAudioStreamType(AudioManager.STREAM_MUSIC);
-		
-		mBalataNotifier = balataNotifier;
 		
 		try {
 			mMediaPlayer.setDataSource(OGG_STREAM);
@@ -36,15 +36,15 @@ public class BalataStreamer implements MediaPlayer.OnPreparedListener {
 		if (mStreamStarted) {
 			mp.start();
 		}
-		mBalataNotifier.setBuffering(false);
+
+		mController.setStreamingState(BalataController.StreamingState.PLAYING);
 	}
 
 	public void play() {
 		if (!mMediaPlayer.isPlaying() && !mStreamStarted) {
 			mStreamStarted = true;
-			mBalataNotifier.setPlaying(true);
-			mBalataNotifier.setBuffering(true);			
 			mMediaPlayer.prepareAsync();
+			mController.setStreamingState(BalataController.StreamingState.BUFFERING);
 		}
 	}
 
@@ -52,9 +52,11 @@ public class BalataStreamer implements MediaPlayer.OnPreparedListener {
 		if (pause) {
 			mPrevStreamState = mStreamStarted;
 			mMediaPlayer.pause();
+			mController.setStreamingState(BalataController.StreamingState.PAUSED);
 		} else {
 			if (mPrevStreamState) {
 				mMediaPlayer.start();
+				mController.setStreamingState(BalataController.StreamingState.PLAYING);
 			}
 		}
 	}
@@ -62,9 +64,8 @@ public class BalataStreamer implements MediaPlayer.OnPreparedListener {
 	public void stop() {
 		if (mMediaPlayer.isPlaying()) {
 			mStreamStarted = false;
-			mBalataNotifier.setBuffering(false);
-			mBalataNotifier.setPlaying(false);
 			mMediaPlayer.stop();
+			mController.setStreamingState(BalataController.StreamingState.STOPPED);
 		}
 	}
 	

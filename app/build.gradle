@@ -15,14 +15,11 @@ android {
         }
     }
 
-    useLibrary 'org.apache.http.legacy'
-
     productFlavors {
     }
 }
 
 dependencies {
     compile files('libs/MixpanelAPI_v2.2.jar')
-    compile files('libs/org.apache.http.legacy.jar')
     compile 'com.android.support:support-v13:23.0.1'
 }
