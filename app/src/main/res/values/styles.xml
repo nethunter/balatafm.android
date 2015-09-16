@@ -1,0 +1,47 @@
+<resources xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <style name="AppBaseTheme" parent="@android:style/Theme.Black.NoTitleBar">
+        <!--
+        Base application theme, dependent on API level. This theme is replaced
+        by AppBaseTheme from res/values-vXX/styles.xml on newer devices.
+        -->
+    </style>
+
+    <style name="Button" parent="@android:style/Widget.ImageButton">
+        <item name="android:background">@android:color/transparent</item>
+    </style>
+
+    <style name="PlayPause" parent="@android:style/Widget.Button.Toggle">
+        <item name="android:background">@drawable/play_pause_selector</item>
+        <item name="android:padding">5dp</item>
+        <item name="android:textOn" />
+        <item name="android:textOff" />
+    </style>
+
+    <style name="SeekBar" parent="@android:style/Widget.SeekBar">
+        <item name="android:paddingLeft">10dp</item>
+        <item name="android:paddingRight">10dp</item>
+        <item name="android:thumb">@drawable/player_volume_center</item>
+        <item name="android:progressDrawable">@drawable/play_volume_middle_line</item>
+    </style>
+
+    <style name="BufferBar" parent="@android:style/Widget.ProgressBar.Horizontal">
+        <item name="android:indeterminate">true</item>
+        <item name="android:progressDrawable">@drawable/progress_horizontal_holo_dark</item>
+        <item name="android:indeterminateDrawable">@drawable/progress_indeterminate_horizontal_holo_dark</item>
+        <!--  <item name="android:minHeight">16dp</item>
+        <item name="android:maxHeight">16dp</item> -->
+    </style>
+
+    <!-- Application theme. -->
+    <style name="BalataFMTheme" parent="AppBaseTheme">
+
+        <!-- All customizations that are NOT specific to a particular API-level can go here. -->
+
+        <item name="android:windowNoTitle">true</item>
+        <item name="android:imageButtonStyle">@style/Button</item>
+        <item name="android:buttonStyleToggle">@style/PlayPause</item>
+        <item name="android:seekBarStyle">@style/SeekBar</item>
+        <item name="android:progressBarStyleHorizontal">@style/BufferBar</item>
+    </style>
+</resources>

@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/RelativeLayout1"
+    android:layout_width="fill_parent"
+    android:layout_height="wrap_content"
+    android:background="@drawable/bottom_line"
+    android:orientation="vertical"
+    android:paddingBottom="25dp">
+
+    <TextView
+        android:id="@+id/tv_song_info"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_alignParentTop="true"
+        android:layout_marginBottom="15dp"
+        android:layout_marginTop="15dp"
+        android:width="200dp"
+        android:gravity="center"
+        android:lines="2"
+        android:maxWidth="200dp"
+        android:minHeight="40dp"
+        android:text="@string/song_info"
+        android:textColor="@android:color/background_light"
+        android:textSize="20sp" />
+
+    <ToggleButton
+        android:id="@+id/btn_play_stop"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/tv_song_info"
+        android:layout_marginLeft="25dp"
+        android:layout_marginRight="25dp"
+        android:checked="false"
+        android:contentDescription="@string/play_pause_button" />
+
+    <SeekBar
+        android:id="@+id/sb_volume"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_alignTop="@+id/btn_play_stop"
+        android:layout_marginRight="15dp"
+        android:layout_toRightOf="@id/btn_play_stop" />
+
+</RelativeLayout>
