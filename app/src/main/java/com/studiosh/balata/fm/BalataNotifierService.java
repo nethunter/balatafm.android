@@ -46,9 +46,6 @@ public class BalataNotifierService extends Service {
             }
 		}
 	};
-    private Intent intent;
-    private int flags;
-    private int startId;
 
     @Override
 	public IBinder onBind(Intent intent) {
@@ -61,8 +58,7 @@ public class BalataNotifierService extends Service {
         }
 
         if (mNotifier == null) {
-            mNotifier = new BalataNotifier(mController);
-            startForeground(BalataNotifier.NOTIFY_ID, mNotifier.createNotification());
+            mNotifier = new BalataNotifier(mController, this);
         }
 
         return mBinder;
@@ -70,17 +66,21 @@ public class BalataNotifierService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        int result = super.onStartCommand(intent, flags, startId);
+        stopSelf();
 
-        String command = intent.getStringExtra("COMMAND");
+        Log.d(TAG, "Started service");
 
-        if (command.equals("play")) {
-            EventBus.getDefault().post(new PlayerCommand(PlayerCommand.CommandEnum.PLAY));
-        } else if (command.equals("stop")) {
-            EventBus.getDefault().post(new PlayerCommand(PlayerCommand.CommandEnum.STOP));
+        if (intent != null) {
+            String command = intent.getStringExtra("COMMAND");
+
+            if (command.equals("play")) {
+                EventBus.getDefault().post(new PlayerCommand(PlayerCommand.CommandEnum.PLAY));
+            } else if (command.equals("stop")) {
+                EventBus.getDefault().post(new PlayerCommand(PlayerCommand.CommandEnum.STOP));
+            }
         }
 
-        return result;
+        return 0;
     }
 
     // General Service Logic

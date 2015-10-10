@@ -3,6 +3,7 @@ package com.studiosh.balata.fm;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
+import android.app.Service;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Handler;
@@ -25,9 +26,11 @@ public class BalataNotifier {
 	private NotificationCompat.Builder mNotifyBuild;
 
 	private BalataController mController;
+    private Service mService;
 	
-	public BalataNotifier(BalataController application) {
+	public BalataNotifier(BalataController application, Service service) {
 		mController = application;
+        mService = service;
 		EventBus.getDefault().registerSticky(this);
     }
 	
@@ -44,6 +47,12 @@ public class BalataNotifier {
 	public void onEvent(PlayerState playerState) {
 		mPlayerState = playerState;
 		updateNotification();
+
+        if (playerState.streamingState == PlayerState.StreamingState.STOPPED) {
+            mService.stopForeground(false);
+        } else {
+            mService.startForeground(BalataNotifier.NOTIFY_ID, createNotification());
+        }
 	}
 
 	/**
@@ -54,8 +63,8 @@ public class BalataNotifier {
 	private PendingIntent getPendingIntent() {
 		Intent intent = new Intent(mController.getApplicationContext(), MainActivity.class);
 		intent.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK
-				| Intent.FLAG_ACTIVITY_NO_ANIMATION
-				| Intent.FLAG_ACTIVITY_NEW_TASK);
+                | Intent.FLAG_ACTIVITY_NO_ANIMATION
+                | Intent.FLAG_ACTIVITY_NEW_TASK);
 
 		return PendingIntent.getActivity(mController.getApplicationContext(), 0,
 					intent,PendingIntent.FLAG_UPDATE_CURRENT);
@@ -90,7 +99,6 @@ public class BalataNotifier {
 		mNotifyBuild = new NotificationCompat.Builder(mController.getApplicationContext())
 			.setContentTitle(mController.getString(R.string.balatafm))
 			.setSmallIcon(R.drawable.ic_notification)
-            .setOngoing(false)
 			.setContentIntent(getPendingIntent());
 
 		mNotifyBuild.setContentText(getNotificationString());
@@ -98,10 +106,9 @@ public class BalataNotifier {
 		if (mPlayerState.isBuffering()) {
 			mNotifyBuild.setProgress(0, 0, true);
 		} else {
-			mNotifyBuild.setProgress(0, 0, false);
-
 			if (mPlayerState.isPlaying()) {
 				mNotifyBuild.addAction(R.drawable.player_stop, "Stop", getBroadcastIntent("stop"));
+                mNotifyBuild.setOngoing(true);
 			} else {
 				mNotifyBuild.addAction(R.drawable.player_play, "Play", getBroadcastIntent("play"));
 			}

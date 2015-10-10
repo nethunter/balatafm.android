@@ -162,7 +162,9 @@ public class MainActivity extends Activity {
 			imgBalataLogo.startAnimation(animFade);
 			pbBuffering.setVisibility(View.VISIBLE);
 		} else {
-			tvSongInfo.setText(mSongInfo.streamTitle);
+            if (mSongInfo != null) {
+                tvSongInfo.setText(mSongInfo.streamTitle);
+            }
 
 			imgBalataLogo.setAnimation(null);
 			pbBuffering.setVisibility(View.INVISIBLE);

@@ -15,6 +15,7 @@ import com.studiosh.balata.fm.Eventbus.PlayerState;
 import com.studiosh.balata.fm.Eventbus.PlayerState.StreamingState;
 
 import de.greenrobot.event.EventBus;
+import hugo.weaving.DebugLog;
 
 public class BalataController extends Application {
     public static final String TAG = BalataController.class.getSimpleName();
@@ -57,6 +58,7 @@ public class BalataController extends Application {
     }
 
     @Override
+    @DebugLog
     public void onTerminate() {
         super.onTerminate();
         EventBus.getDefault().unregister(this);
@@ -77,6 +79,7 @@ public class BalataController extends Application {
         editor.commit();
     }
 
+    @DebugLog
     public BalataStreamer getStreamer() {
         if (mBalataStreamer == null) {
             mBalataStreamer = new BalataStreamer(this);
@@ -90,7 +93,7 @@ public class BalataController extends Application {
         mPhoneStateListener = new PhoneStateListener() {
             @Override
             public void onCallStateChanged(int state, String incomingNumber) {
-                if (mBalataStreamer.getPlayerState().streamingState != StreamingState.STOPPED) {
+                if (mBalataStreamer != null && mBalataStreamer.getPlayerState().streamingState != StreamingState.STOPPED) {
                     if (state == TelephonyManager.CALL_STATE_RINGING || state == TelephonyManager.CALL_STATE_OFFHOOK) {
                         mBalataStreamer.pause(true);
                     } else if (state == TelephonyManager.CALL_STATE_IDLE) {
