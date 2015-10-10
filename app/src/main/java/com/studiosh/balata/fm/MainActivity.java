@@ -1,17 +1,16 @@
 package com.studiosh.balata.fm;
 
 import android.app.Activity;
-import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
-import android.content.SharedPreferences;
+import android.content.ServiceConnection;
 import android.database.ContentObserver;
 import android.media.AudioManager;
 import android.os.Bundle;
 import android.os.Handler;
+import android.os.IBinder;
 import android.view.View;
-import android.view.View.OnClickListener;
 import android.view.animation.Animation;
 import android.view.animation.AnimationUtils;
 import android.widget.ImageView;
@@ -21,74 +20,67 @@ import android.widget.SeekBar.OnSeekBarChangeListener;
 import android.widget.TextView;
 import android.widget.ToggleButton;
 
-import com.studiosh.balata.fm.BalataController.StreamingState;
+import com.studiosh.balata.fm.Eventbus.PlayerState;
+import com.studiosh.balata.fm.Eventbus.SongInfo;
+
+import butterknife.Bind;
+import butterknife.ButterKnife;
+import butterknife.OnClick;
+import de.greenrobot.event.EventBus;
 
 public class MainActivity extends Activity {
 	private static final String TAG = "MainActivity";
-	private static BalataNotifierService mSongInfoService;
+    private SongInfo mSongInfo;
+    private PlayerState mPlayerState = new PlayerState();
+
+    @Bind(R.id.tv_song_info) TextView tvSongInfo;
+    @Bind(R.id.btn_play_stop) ToggleButton btnPlayStop;
+    @Bind(R.id.balata_logo) ImageView imgBalataLogo;
+    @Bind(R.id.buffering) ProgressBar pbBuffering;
+    @Bind(R.id.sb_volume) SeekBar sbVolume;
 
 	private BalataController mController;
-	private String mSongArtist;
-	private String mSongTitle;
-	private BalataController.StreamingState mStreamingState;
 
-	private BroadcastReceiver mSongDetailsReciever = new BroadcastReceiver() {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			mSongArtist = intent.getStringExtra("song_artist");
-			mSongTitle = intent.getStringExtra("song_title");
+    private BalataNotifierService mService;
 
-			updateUI();
+    private ServiceConnection mServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mService = ((BalataNotifierService.LocalBinder)service).getService();
+        }
+
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mService = null;
+        }
+    };
+
+    @OnClick(R.id.btn_play_stop) void onPlayStopClick(ToggleButton tb) {
+		Boolean isChecked = tb.isChecked();
+
+		if (!isChecked) {
+			if (mPlayerState.isPlaying()) {
+				mController.getStreamer().stop();
+			}
+		} else {
+			if (!mPlayerState.isPlaying()) {
+				mController.getStreamer().play();
+			}
 		}
-	};
-
-	private BroadcastReceiver mStreamingStateReciever = new BroadcastReceiver() {
-		@Override
-		public void onReceive(Context context, Intent intent) {
-			mStreamingState = StreamingState.values()[intent.getIntExtra("state", 0)];
-
-			updateUI();
-		}
-	};
+	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.activity_main);
-		mController = BalataController.getInstance();
 
-		// Handle the Start/Stop Button
-		ToggleButton btnPlayStop = (ToggleButton) findViewById(R.id.btn_play_stop);
-		btnPlayStop.setOnClickListener(new OnClickListener() {
-			public void onClick(View v) {
-				ToggleButton tb = (ToggleButton) v;
-				Boolean isChecked = tb.isChecked();
-
-				BalataStreamer streamer = mController.getStreamer();
-
-				if (!isChecked) {
-					if (mController.isStreamStarted()) {
-						mController.stopStream();
-					}
-				} else {
-					if (!mController.isStreamStarted()) {
-						mController.startStream();
-					}
-				}
-
-	            SharedPreferences settings = getSharedPreferences(
-                        BalataController.PREFS_NAME, 0);
-	            SharedPreferences.Editor editor = settings.edit();
-	            editor.putBoolean("is_playing", streamer.isStreamStarted());
-	            editor.commit();
-			}
-		});
+		mController = (BalataController) getApplication();
+		ButterKnife.bind(this);
 
 		// Set the volume seek bar
-		final SeekBar sbVolume = (SeekBar) findViewById(R.id.sb_volume);
-		final AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
+        final AudioManager audio = (AudioManager) getSystemService(Context.AUDIO_SERVICE);
 
-		// First let's handle the seek bar
+        // First let's handle the seek bar
 		sbVolume.setMax(audio.getStreamMaxVolume(AudioManager.STREAM_MUSIC));
 		sbVolume.setProgress(audio.getStreamVolume(AudioManager.STREAM_MUSIC));
 		sbVolume.setOnSeekBarChangeListener(new OnSeekBarChangeListener() {
@@ -108,7 +100,7 @@ public class MainActivity extends Activity {
         });
 
 		// Monitor system changes for volume change
-		getApplicationContext().getContentResolver().registerContentObserver(
+		getContentResolver().registerContentObserver(
                 android.provider.Settings.System.CONTENT_URI, true,
                 new ContentObserver(new Handler()) {
                     public void onChange(boolean selfChange) {
@@ -119,58 +111,58 @@ public class MainActivity extends Activity {
                 }
         );
     }
-	
-	@Override
-	protected void onStart() {
-		super.onStart();
+
+    @Override
+    protected void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+    }
+
+    protected void onResume() {
+		super.onResume();
+        EventBus.getDefault().registerSticky(this);
+
+        // Initialize the state of the player
+        mPlayerState = mController.getStreamer().getPlayerState();
+        bindService(new Intent(this, BalataNotifierService.class),
+                mServiceConnection, Context.BIND_AUTO_CREATE);
 
         // Start the updates service
-		if (!mController.isStreamStarted()) {
-			// Set the custom font for the text areas
-			TextView tvSongInfo = (TextView) findViewById(R.id.tv_song_info);
-			tvSongInfo.setText(R.string.retrieveing_song_details);
-		}
-
+        if (mSongInfo == null) {
+            tvSongInfo.setText(R.string.retrieveing_song_details);
+        } else {
+            tvSongInfo.setText(mSongInfo.streamTitle);
+        }
 	}
 	
-	@Override
-	protected void onStop() {
-		super.onStop();
-	}
-
-	protected void onResume() {
-		super.onResume();
-		registerReceiver(mSongDetailsReciever, new IntentFilter(BalataController.SONG_DETAILS_UPDATE));
-		registerReceiver(mStreamingStateReciever, new IntentFilter(BalataController.STREAMING_STATE_UPDATE));
-	}
-	
-	protected void noPause() {
+	protected void onPause() {
 		super.onPause();
-		unregisterReceiver(mSongDetailsReciever);
-        unregisterReceiver(mStreamingStateReciever);
-	}
-	
-	public void updateUI() {
-		TextView tvSongInfo = (TextView) findViewById(R.id.tv_song_info);
-		ToggleButton btnPlayStop = (ToggleButton) findViewById(R.id.btn_play_stop);
-		ImageView imgBalataLogo = (ImageView) findViewById(R.id.balata_logo);
-		ProgressBar pbBuffering = (ProgressBar) findViewById(R.id.buffering);
+        EventBus.getDefault().unregister(this);
+        unbindService(mServiceConnection);
+    }
 
-		boolean buffering = (mStreamingState == BalataController.StreamingState.BUFFERING);
-		boolean playing = (mStreamingState == BalataController.StreamingState.PLAYING);
+    public void onEventMainThread(SongInfo songInfo) {
+        mSongInfo = songInfo;
+        updateUI();
+    }
 
-		btnPlayStop.setChecked(playing);
+    public void onEventMainThread(PlayerState playerState) {
+        mPlayerState = playerState;
+        updateUI();
+    }
+
+    public void updateUI() {
+		btnPlayStop.setChecked(mPlayerState.streamingState != PlayerState.StreamingState.STOPPED);
 		// btnPlayStop.setClickable(!buffering);
-		btnPlayStop.setEnabled(buffering);
+		btnPlayStop.setEnabled(!mPlayerState.isBuffering());
 
-		if (buffering) {
+		if (mPlayerState.isBuffering()) {
 			tvSongInfo.setText(getString(R.string.buffering));
 			Animation animFade = AnimationUtils.loadAnimation(getApplicationContext(),
 					R.anim.balata_logo_fades);
 			imgBalataLogo.startAnimation(animFade);
 			pbBuffering.setVisibility(View.VISIBLE);
 		} else {
-			tvSongInfo.setText(mSongArtist + "\n" + mSongTitle);
+			tvSongInfo.setText(mSongInfo.streamTitle);
 
 			imgBalataLogo.setAnimation(null);
 			pbBuffering.setVisibility(View.INVISIBLE);

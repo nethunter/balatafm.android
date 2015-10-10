@@ -14,5 +14,11 @@
 
     <string name="hello_world">Hello world!</string>
     <string name="action_settings">Settings</string>
+    <string name="balata_url">http://balata.fm</string>
+    <string name="balata_stream_url_mp3">http://stream.balata.fm/stream.mp3</string>
+    <string name="balata_stream_url_ogg">http://stream.balata.fm/stream.ogg</string>
+    <string name="pref_description_streaming_format">The format of the stream to use</string>
+    <string name="pref_title_streaming_format">Streaming format</string>
+    <string name="pref_header_streaming">Streaming</string>
 
 </resources>

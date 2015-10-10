@@ -1,183 +1,88 @@
 package com.studiosh.balata.fm;
 
 import android.app.Application;
-import android.content.BroadcastReceiver;
+import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
-import android.content.IntentFilter;
+import android.content.ServiceConnection;
 import android.content.SharedPreferences;
+import android.os.IBinder;
 import android.telephony.PhoneStateListener;
 import android.telephony.TelephonyManager;
 
-/**
- * Created by nethunter on 9/16/15.
- */
+import com.squareup.leakcanary.LeakCanary;
+import com.studiosh.balata.fm.Eventbus.PlayerState;
+import com.studiosh.balata.fm.Eventbus.PlayerState.StreamingState;
+
+import de.greenrobot.event.EventBus;
+
 public class BalataController extends Application {
     public static final String TAG = BalataController.class.getSimpleName();
 
-    public static final String SONG_DETAILS_UPDATE =
-            "com.studiosh.balata.fm.SONG_DETAILS_UPDATE";
-    public static final String STREAMING_STATE_UPDATE =
-            "com.studiosh.balata.fm.STREAMING_STATE_UPDATE";
     public static final String COMMAND_ACTION =
             "com.studiosh.balata.fm.COMMAND";
 
-    private static BalataController mInstance;
-
-    private static BalataNotifierService mSongInfoService;
-
-    private static BalataUpdater mBalataUpdater;
-    private static BalataStreamer mBalataStreamer;
-    private static BalataNotifier mBalataNotifier;
-
-    public static final int NOTIFY_ID = 1345;
-
-    private String mSongArtist;
-    private String mSongTitle;
+    private BalataStreamer mBalataStreamer;
 
     public static final String PREFS_NAME = "BalataPrefs";
-
     private PhoneStateListener mPhoneStateListener;
 
-    private Intent mServiceIntent;
-    private static Boolean mServiceStarted = false;
-    private Boolean mBound = false;
+    private BalataNotifierService mService;
 
-    public enum StreamingState {
-        STOPPED, BUFFERING, PLAYING, PAUSED
-    }
+    private ServiceConnection mServiceConnection = new ServiceConnection() {
+        @Override
+        public void onServiceConnected(ComponentName name, IBinder service) {
+            mService = ((BalataNotifierService.LocalBinder)service).getService();
+        }
 
-    private StreamingState mStreamingState;
-
-    private BroadcastReceiver mCommandReciever = new BroadcastReceiver() {
-        public void onReceive(Context context, Intent intent) {
-            if (intent.getAction().equals(COMMAND_ACTION)) {
-                String command = intent.getStringExtra("COMMAND");
-
-                if (command.equals("play")) {
-                    startStream();
-                } else if (command.equals("stop")) {
-                    stopStream();
-                }
-            }
+        @Override
+        public void onServiceDisconnected(ComponentName name) {
+            mService = null;
         }
     };
-
-    public static synchronized BalataController getInstance() {
-        return mInstance;
-    }
 
     @Override
     public void onCreate() {
         super.onCreate();
-        mInstance = this;
-
-        registerReceiver(mCommandReciever, new IntentFilter(COMMAND_ACTION));
+        LeakCanary.install(this);
+        EventBus.getDefault().registerSticky(this);
         registerPauseOnPhoneCall();
 
-        SharedPreferences settings = getSharedPreferences(PREFS_NAME, 0);
-        boolean is_playing = settings.getBoolean("is_playing", false);
-        if (is_playing) {
-            startStream();
+        SharedPreferences prefs = getSharedPreferences(PREFS_NAME, MODE_PRIVATE);
+        Boolean isPlaying = prefs.getBoolean("is_playing", false);
+
+        if (isPlaying) {
+            getStreamer().play();
         }
     }
 
     @Override
     public void onTerminate() {
         super.onTerminate();
-        unregisterReceiver(mCommandReciever);
+        EventBus.getDefault().unregister(this);
     }
 
-    public StreamingState getStreamingState() {
-        return mStreamingState;
-    }
-
-    public void setStreamingState(StreamingState streamingState) {
-        if (streamingState != mStreamingState) {
-            mStreamingState = streamingState;
-
-            Intent intent = new Intent(STREAMING_STATE_UPDATE);
-            intent.putExtra("state", streamingState.ordinal());
-
-            sendBroadcast(intent);
+    public void onEvent(PlayerState playerState) {
+        if (playerState.streamingState != StreamingState.STOPPED) {
+            bindService(new Intent(this, BalataNotifierService.class),
+                    mServiceConnection, Context.BIND_AUTO_CREATE);
+        } else {
+            if (mService != null && getStreamer().isStreamStarted()) {
+                unbindService(mServiceConnection);
+            }
         }
-    }
 
-    public boolean isStreamStarted() {
-        StreamingState streamingState = getStreamingState();
-
-        return streamingState != StreamingState.STOPPED;
-    }
-
-    public void startStream() {
-        startBalataNotifierService();
-        getUpdater().start();
-        getStreamer().play();
-    }
-
-    public void pauseStream(boolean pause) {
-        getStreamer().pause(pause);
-    }
-
-    public void stopStream() {
-        getStreamer().stop();
-        stopBalataNotifierService();
-        stopBalataUpdaterThread();
-    }
-
-    public void startBalataNotifierService() {
-        mServiceIntent = new Intent(this, BalataNotifierService.class);
-        startService(mServiceIntent);
-        mServiceStarted = true;
-    }
-
-    public void stopBalataNotifierService() {
-        if (mServiceStarted && getStreamer().isStreamStarted()) {
-            stopService(new Intent(this, BalataNotifierService.class));
-            mServiceStarted = false;
-        }
-    }
-
-    public void stopBalataUpdaterThread() {
-        mBalataUpdater.interrupt();
-        mBalataUpdater = null;
-    }
-
-    /**
-     * Update the song details in the
-     */
-    public synchronized void updateSongDetails(String songArtist, String songTitle) {
-        if (!songArtist.equals(mSongArtist) || !songTitle.equals(mSongArtist)) {
-            mSongArtist = songArtist;
-            mSongTitle = songTitle;
-
-
-            sendBroadcast(getSongDetailsIntent());
-        }
-    }
-
-    public Intent getSongDetailsIntent() {
-        Intent intent = new Intent(SONG_DETAILS_UPDATE);
-        intent.putExtra("song_artist", mSongArtist);
-        intent.putExtra("song_title", mSongTitle);
-
-        return intent;
+        SharedPreferences.Editor editor = getSharedPreferences(PREFS_NAME, MODE_PRIVATE).edit();
+        editor.putBoolean("is_playing", playerState.streamingState != StreamingState.STOPPED);
+        editor.commit();
     }
 
     public BalataStreamer getStreamer() {
         if (mBalataStreamer == null) {
-            mBalataStreamer = new BalataStreamer();
+            mBalataStreamer = new BalataStreamer(this);
         }
 
         return mBalataStreamer;
-    }
-
-    public BalataUpdater getUpdater() {
-        if (mBalataUpdater == null) {
-            mBalataUpdater = new BalataUpdater();
-        }
-
-        return mBalataUpdater;
     }
 
     public void registerPauseOnPhoneCall()
@@ -185,10 +90,12 @@ public class BalataController extends Application {
         mPhoneStateListener = new PhoneStateListener() {
             @Override
             public void onCallStateChanged(int state, String incomingNumber) {
-                if (state == TelephonyManager.CALL_STATE_RINGING || state == TelephonyManager.CALL_STATE_OFFHOOK) {
-                    pauseStream(true);
-                } else if(state == TelephonyManager.CALL_STATE_IDLE) {
-                    pauseStream(false);
+                if (mBalataStreamer.getPlayerState().streamingState != StreamingState.STOPPED) {
+                    if (state == TelephonyManager.CALL_STATE_RINGING || state == TelephonyManager.CALL_STATE_OFFHOOK) {
+                        mBalataStreamer.pause(true);
+                    } else if (state == TelephonyManager.CALL_STATE_IDLE) {
+                        mBalataStreamer.pause(false);
+                    }
                 }
                 super.onCallStateChanged(state, incomingNumber);
             }

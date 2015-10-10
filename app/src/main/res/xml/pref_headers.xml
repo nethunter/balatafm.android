@@ -7,6 +7,12 @@
         android:title="@string/pref_header_general" />
     <header
         android:fragment="${packageName}.${activityClass}$StreamingPreferenceFragment"
-        android:title="@string/pref_header_streaming" />
+        android:title="@string/pref_header_streaming" /><header
+        android:fragment="com.studiosh.balata.fm.SettingsActivity$GeneralPreferenceFragment"
+        android:title="@string/pref_header_general" /><header
+        android:fragment="com.studiosh.balata.fm.SettingsActivity$NotificationPreferenceFragment"
+        android:title="@string/pref_header_notifications" /><header
+        android:fragment="com.studiosh.balata.fm.SettingsActivity$DataSyncPreferenceFragment"
+        android:title="@string/pref_header_data_sync" />
     
 </preference-headers>
